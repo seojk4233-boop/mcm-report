@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>성주센터 · Daily Report Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f0f3f9;
+  --bg2:#ffffff;
+  --bg3:#f7f9fc;
+  --border:#e4e9f2;
+  --border2:#c8d2e8;
+  --text:#1a2340;
+  --text2:#4a5680;
+  --text3:#96a0b8;
+  --accent:#2563eb;
+  --accent2:#1d4ed8;
+  --green:#059669;
+  --red:#dc2626;
+  --yellow:#d97706;
+  --purple:#7c3aed;
+}
+body{background:linear-gradient(135deg,#eef2ff 0%,#f0f7ff 50%,#f5f0ff 100%);color:var(--text);font-family:'Inter','Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* HEADER */
+.hdr{background:rgba(255,255,255,.92);border-bottom:1px solid rgba(255,255,255,.6);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(37,99,235,.1);backdrop-filter:blur(12px)}
+.hdr-left{display:flex;align-items:center;gap:16px}
+.logo{font-family:'Inter','Noto Sans KR',sans-serif;font-size:22px;font-weight:800;letter-spacing:2px;color:var(--accent)}
+.logo span{color:var(--text2);font-weight:700}
+.badge{font-family:'Inter','Noto Sans KR',sans-serif;font-size:12px;padding:3px 8px;border-radius:4px;background:rgba(0,196,255,.1);color:var(--accent);border:1px solid rgba(0,196,255,.2);letter-spacing:1px}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.live{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green);font-family:'Inter','Noto Sans KR',sans-serif}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* DATE NAV */
+.date-nav{background:rgba(255,255,255,.85);border-bottom:1px solid rgba(255,255,255,.5);backdrop-filter:blur(8px);padding:0 32px;display:flex;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none}
+.date-nav::-webkit-scrollbar{display:none}
+.date-tab{flex-shrink:0;padding:14px 18px;font-family:'Inter','Noto Sans KR',sans-serif;font-size:14px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.date-tab:hover{color:var(--text2);background:rgba(37,99,235,.04)}
+.date-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:linear-gradient(180deg,rgba(37,99,235,.08),rgba(37,99,235,.02))}
+.date-tab .day{font-size:11px;color:var(--text3);display:block;margin-top:2px;letter-spacing:1px}
+.date-tab.active .day{color:var(--accent2)}
+
+/* MAIN */
+.main{padding:24px 32px;max-width:1600px;margin:0 auto}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px 22px;position:relative;overflow:hidden;transition:all .25s;box-shadow:0 4px 16px rgba(37,99,235,.08),0 1px 3px rgba(0,0,0,.06)}
+.kpi:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 8px 28px rgba(37,99,235,.14),0 2px 6px rgba(0,0,0,.08)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.blue::before{background:linear-gradient(90deg,var(--accent),rgba(37,99,235,.1))}
+.kpi.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.kpi.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.kpi.yellow::before{background:linear-gradient(90deg,var(--yellow),transparent)}
+.kpi.purple::before{background:linear-gradient(90deg,var(--purple),transparent)}
+.kpi-label{font-family:'Inter','Noto Sans KR',sans-serif;font-size:11px;letter-spacing:2px;color:var(--text2);margin-bottom:10px;text-transform:uppercase}
+.kpi-val{font-family:'Inter','Noto Sans KR',sans-serif;font-size:32px;font-weight:800;line-height:1;letter-spacing:-1px}
+.kpi-val.blue{color:var(--accent)}
+.kpi-val.green{color:var(--green)}
+.kpi-val.red{color:var(--red)}
+.kpi-val.yellow{color:var(--yellow)}
+.kpi-val.purple{color:var(--purple)}
+.kpi-sub{font-size:13px;color:var(--text2);margin-top:6px;font-family:'Inter','Noto Sans KR',sans-serif}
+.kpi-delta{font-size:12px;margin-top:4px;font-family:'Inter','Noto Sans KR',sans-serif;font-weight:500}
+.kpi-delta.up{color:var(--green)}.kpi-delta.dn{color:var(--red)}.kpi-delta.nt{color:var(--text2)}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid rgba(255,255,255,.8);border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(37,99,235,.09),0 1px 4px rgba(0,0,0,.06);backdrop-filter:blur(2px)}
+.card-hdr{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,rgba(37,99,235,.03),transparent)}
+.card-title{font-family:'Inter','Noto Sans KR',sans-serif;font-size:15px;font-weight:700;letter-spacing:.5px}
+.card-badge{font-family:'Inter','Noto Sans KR',sans-serif;font-size:11px;padding:3px 8px;border-radius:20px;letter-spacing:1px}
+.card-badge.blue{background:rgba(0,196,255,.1);color:var(--accent);border:1px solid rgba(0,196,255,.2)}
+.card-badge.green{background:rgba(0,229,160,.1);color:var(--green);border:1px solid rgba(0,229,160,.2)}
+.card-badge.yellow{background:rgba(255,208,96,.1);color:var(--yellow);border:1px solid rgba(255,208,96,.2)}
+.card-body{padding:20px}
+
+/* CHART */
+.chart-wrap{position:relative;height:200px}
+canvas{width:100%!important}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-family:'Inter','Noto Sans KR',sans-serif;font-size:12px;letter-spacing:1px;color:var(--text3);padding:8px 12px;text-align:right;border-bottom:1px solid var(--border);text-transform:uppercase}
+.tbl th:first-child{text-align:left}
+.tbl td{padding:11px 14px;text-align:right;border-bottom:1px solid rgba(30,37,48,.5);font-size:14px;font-family:'Inter','Noto Sans KR',sans-serif}
+.tbl td:first-child{text-align:left;font-size:14px;color:var(--text2)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(37,99,235,.06);transition:background .15s}
+.tbl .tot td{background:rgba(37,99,235,.06);color:var(--accent);font-weight:500}
+
+/* INVENTORY BAR */
+.inv-wrap{display:flex;flex-direction:column;gap:10px}
+.inv-item{display:flex;align-items:center;gap:12px}
+.inv-name{font-family:'Inter','Noto Sans KR',sans-serif;font-size:11px;color:var(--text2);width:70px;flex-shrink:0}
+.inv-bar-bg{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.inv-bar{height:100%;border-radius:3px;transition:width .6s ease}
+.inv-val{font-family:'Inter','Noto Sans KR',sans-serif;font-size:11px;color:var(--text2);width:70px;text-align:right;flex-shrink:0}
+
+/* WEATHER */
+.weather{display:flex;align-items:center;gap:8px;font-family:'Inter','Noto Sans KR',sans-serif;font-size:13px;color:var(--text2)}
+
+/* WORKER */
+.worker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.worker-card{background:var(--bg3);border-radius:10px;padding:16px;text-align:center;border:1px solid var(--border)}
+.worker-n{font-family:'Inter','Noto Sans KR',sans-serif;font-size:32px;font-weight:800;color:var(--text)}
+.worker-l{font-size:12px;color:var(--text3);font-family:'Inter','Noto Sans KR',sans-serif;letter-spacing:1px;margin-top:4px}
+
+/* TREND LINE */
+.sparkline-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.sparkline-row:last-child{border-bottom:none}
+.sl-label{font-size:14px;color:var(--text2);width:90px;flex-shrink:0}
+.sl-chart{flex:1;height:32px}
+.sl-val{font-family:'Inter','Noto Sans KR',sans-serif;font-size:14px;color:var(--text);width:80px;text-align:right;flex-shrink:0}
+
+/* SECTION TITLE */
+.sec-title{font-family:'Inter','Noto Sans KR',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;color:var(--text3);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.upbtn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter','Noto Sans KR',sans-serif;transition:background .15s}
+.upbtn:hover{background:var(--accent2)}
+@media(max-width:1100px){.kpi-row{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.grid3{grid-template-columns:1fr}}
+@media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}.main{padding:16px}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">DAILY<span> REPORT</span></div>
+    <div class="badge" id="monthBadge">성주센터 · 로딩중</div>
+  </div>
+  <div class="hdr-right">
+    <div class="weather" id="weather">— ℃ / —%</div>
+    <button class="upbtn" id="upbtn" onclick="document.getElementById('fi').click()">📂 엑셀 업로드</button>
+    <input type="file" id="fi" accept=".xlsx,.xls" style="display:none">
+    <span id="upstat" style="font-size:12px;color:var(--text2)"></span>
+    <div class="live" id="syncbadge"><span class="live-dot"></span>연결 중</div>
+  </div>
+</div>
+
+<div class="date-nav" id="dateNav"></div>
+
+<div class="main">
+  <div class="kpi-row" id="kpiRow"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">입출고 월간 트렌드</div><div class="card-badge blue">월간</div></div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">재고 현황</div><div class="card-badge green">당일</div></div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="invChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">출고 상세</div><div class="card-badge green">PCS</div></div>
+      <div class="card-body">
+        <table class="tbl" id="delivTbl">
+          <thead><tr><th>구분</th><th>국내</th><th>수출</th><th>합계</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">반품 · 입고 추이</div><div class="card-badge yellow">월간</div></div>
+      <div class="card-body">
+        <div id="sparklines"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">월간 전체 현황</div><div class="card-badge blue">전체</div></div>
+    <div class="card-body" style="overflow-x:auto">
+      <table class="tbl" id="summaryTbl">
+        <thead><tr><th>날짜</th><th>인원</th><th>입고</th><th>국내출고</th><th>수출출고</th><th>총출고</th><th>반품</th><th>재고</th><th>온도/습도</th></tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── 현재 월 자동 계산 (매달 자동으로 바뀜)
+const NOW = new Date();
+const CUR_YEAR = NOW.getFullYear();
+const CUR_MONTH = NOW.getMonth(); // 0-based: 1월=0, 5월=4, 6월=5 ...
+const CUR_MONTH_MM = String(CUR_MONTH + 1).padStart(2, '0');
+const CUR_MONTH_LABEL = `${CUR_YEAR}년 ${CUR_MONTH_MM}월`;
+document.getElementById('monthBadge').textContent = '성주센터 · ' + CUR_MONTH_LABEL;
+
+const DATA = [];
+let cur = 0;
+let charts = {};
+
+function f(v){return v==null?'-':Number(v).toLocaleString('ko-KR');}
+
+function buildDateNav(){
+  const nav = document.getElementById('dateNav');
+  nav.innerHTML = '';
+  DATA.forEach((row,i)=>{
+    const el = document.createElement('div');
+    el.className = 'date-tab' + (i===cur?' active':'');
+    el.innerHTML = `${row.label}<span class="day">${row.day}</span>`;
+    el.onclick = ()=>{ cur=i; render(); };
+    nav.appendChild(el);
+  });
+}
+
+function updateDateNav(){
+  document.querySelectorAll('.date-tab').forEach((el,i)=>{
+    el.classList.toggle('active', i===cur);
+  });
+  const tabs = document.querySelectorAll('.date-tab');
+  if(tabs[cur]) tabs[cur].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+}
+
+function render(){
+  if(DATA.length === 0) return;
+  updateDateNav();
+  const d = DATA[cur];
+  const prev = cur>0?DATA[cur-1]:null;
+
+  document.getElementById('weather').textContent = d.th;
+
+  // KPI
+  const totalOut = d.dom + d.exp;
+  const prevOut = prev?(prev.dom+prev.exp):null;
+  const kpis = [
+    {label:'입고',val:f(d.ib),unit:'PCS',delta:prev?d.ib-prev.ib:null,cls:'blue'},
+    {label:'국내 출고',val:f(d.dom),unit:'PCS',delta:prev?d.dom-prev.dom:null,cls:'green'},
+    {label:'수출 출고',val:f(d.exp),unit:'PCS',delta:prev?d.exp-prev.exp:null,cls:'blue'},
+    {label:'총 출고',val:f(totalOut),unit:'PCS',delta:prev?totalOut-prevOut:null,cls:'purple'},
+    {label:'반품',val:f(d.ret),unit:'PCS',delta:prev?d.ret-prev.ret:null,cls:'red'},
+    {label:'재고',val:f(d.inv),unit:'PCS',delta:prev?d.inv-prev.inv:null,cls:'yellow'},
+  ];
+  document.getElementById('kpiRow').innerHTML = kpis.map(k=>{
+    const delt = k.delta!=null ? (k.delta>=0?`▲ +${f(Math.abs(k.delta))}`:`▼ ${f(Math.abs(k.delta))}`): '—';
+    const deltCls = k.delta==null?'nt':k.delta>=0?'up':'dn';
+    const realCls = k.label==='반품'? (k.delta==null?'nt':k.delta>0?'dn':'up') : deltCls;
+    return `<div class="kpi ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-val ${k.cls}">${k.val}</div>
+      <div class="kpi-sub">${k.unit}</div>
+      <div class="kpi-delta ${realCls}">${delt} 전일 대비</div>
+    </div>`;
+  }).join('');
+
+  // Delivery table
+  document.querySelector('#delivTbl tbody').innerHTML = `
+    <tr><td>당일 합계</td><td>${f(d.dom)}</td><td>${f(d.exp)}</td><td>${f(d.dom+d.exp)}</td></tr>
+    <tr><td>월누계</td><td>${f(DATA.slice(0,cur+1).reduce((s,x)=>s+x.dom,0))}</td><td>${f(DATA.slice(0,cur+1).reduce((s,x)=>s+x.exp,0))}</td><td>${f(DATA.slice(0,cur+1).reduce((s,x)=>s+x.dom+x.exp,0))}</td></tr>
+  `;
+
+  // Sparklines
+  const sparkData = [
+    {label:'입고',data:DATA.map(x=>x.ib),color:'#00c4ff',cur:d.ib},
+    {label:'수출',data:DATA.map(x=>x.exp),color:'#a78bfa',cur:d.exp},
+    {label:'국내',data:DATA.map(x=>x.dom),color:'#00e5a0',cur:d.dom},
+    {label:'반품',data:DATA.map(x=>x.ret),color:'#ff4d6a',cur:d.ret},
+  ];
+  document.getElementById('sparklines').innerHTML = sparkData.map(s=>`
+    <div class="sparkline-row">
+      <div class="sl-label">${s.label}</div>
+      <svg class="sl-chart" viewBox="0 0 200 32" preserveAspectRatio="none">
+        <polyline points="${sparkPoints(s.data)}" fill="none" stroke="${s.color}" stroke-width="1.5" opacity=".8"/>
+        ${sparkDot(s.data, cur, s.color)}
+      </svg>
+      <div class="sl-val">${f(s.cur)}</div>
+    </div>
+  `).join('');
+
+  renderTrendChart();
+  renderInvChart();
+  renderSummaryTable();
+}
+
+function sparkPoints(data){
+  const max = Math.max(...data,1), min = Math.min(...data,0);
+  const range = max-min||1;
+  return data.map((v,i)=>{
+    const x = (i/(data.length-1))*198+1;
+    const y = 30 - ((v-min)/range)*28;
+    return `${x},${y}`;
+  }).join(' ');
+}
+function sparkDot(data, idx, color){
+  const max=Math.max(...data,1),min=Math.min(...data,0),range=max-min||1;
+  const x=(idx/(data.length-1))*198+1;
+  const y=30-((data[idx]-min)/range)*28;
+  return `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/>`;
+}
+
+function renderTrendChart(){
+  if(charts.trend) charts.trend.destroy();
+  const labels = DATA.map(d=>d.label);
+  charts.trend = new Chart(document.getElementById('trendChart'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'입고',data:DATA.map(d=>d.ib),backgroundColor:'rgba(0,196,255,.5)',borderRadius:3,order:2},
+        {label:'수출',data:DATA.map(d=>d.exp),backgroundColor:'rgba(167,139,250,.5)',borderRadius:3,order:2},
+        {label:'국내',data:DATA.map(d=>d.dom),backgroundColor:'rgba(0,229,160,.5)',borderRadius:3,order:2},
+        {label:'재고',data:DATA.map(d=>d.inv),type:'line',borderColor:'#ffd060',borderWidth:2,pointRadius:DATA.map((_,i)=>i===cur?5:2),pointBackgroundColor:DATA.map((_,i)=>i===cur?'#ffd060':'rgba(255,208,96,.4)'),tension:.4,yAxisID:'y2',order:1,fill:false},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{color:'#6b7a99',font:{size:10},boxWidth:10,padding:12}}},
+      scales:{
+        x:{grid:{color:'rgba(200,210,230,.8)'},ticks:{color:'#8892aa',font:{size:10}}},
+        y:{grid:{color:'rgba(200,210,230,.8)'},ticks:{color:'#8892aa',font:{size:10}}},
+        y2:{position:'right',grid:{display:false},ticks:{color:'#d97706',font:{size:10}}}
+      }
+    }
+  });
+}
+
+function renderInvChart(){
+  if(charts.inv) charts.inv.destroy();
+  charts.inv = new Chart(document.getElementById('invChart'),{
+    type:'line',
+    data:{
+      labels:DATA.map(d=>d.label),
+      datasets:[{
+        label:'재고',
+        data:DATA.map(d=>d.inv),
+        borderColor:'#00e5a0',
+        backgroundColor:'rgba(0,229,160,.08)',
+        fill:true,borderWidth:2,tension:.4,
+        pointRadius:DATA.map((_,i)=>i===cur?6:2),
+        pointBackgroundColor:DATA.map((_,i)=>i===cur?'#00e5a0':'rgba(0,229,160,.4)'),
+        pointBorderColor:'#0a0c0f',pointBorderWidth:2,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(200,210,230,.8)'},ticks:{color:'#8892aa',font:{size:10}}},
+        y:{grid:{color:'rgba(200,210,230,.8)'},ticks:{color:'#8892aa',font:{size:10}}}
+      }
+    }
+  });
+}
+
+function renderSummaryTable(){
+  const tbody = document.querySelector('#summaryTbl tbody');
+  const tfoot = document.querySelector('#summaryTbl tfoot');
+  tbody.innerHTML = DATA.map((d,i)=>{
+    const tot = d.dom+d.exp;
+    const cls = i===cur?'style="background:rgba(0,196,255,.06)"':'';
+    return `<tr ${cls}>
+      <td style="color:${i===cur?'var(--accent)':'var(--text2)'};font-weight:${i===cur?'600':'400'}">${d.label} <span style="color:var(--text3);font-size:10px">${d.day}</span></td>
+      <td>${d.reg}${d.tmp>0?`<span style="color:var(--text3)">+${d.tmp}</span>`:''}</td>
+      <td style="color:var(--accent)">${f(d.ib)}</td>
+      <td style="color:var(--green)">${f(d.dom)}</td>
+      <td style="color:var(--purple)">${f(d.exp)}</td>
+      <td>${f(tot)}</td>
+      <td style="color:var(--red)">${f(d.ret)}</td>
+      <td style="color:var(--yellow)">${f(d.inv)}</td>
+      <td style="color:var(--text3);font-size:11px">${d.th}</td>
+    </tr>`;
+  }).join('');
+
+  const totIb = DATA.reduce((s,d)=>s+d.ib,0);
+  const totDom = DATA.reduce((s,d)=>s+d.dom,0);
+  const totExp = DATA.reduce((s,d)=>s+d.exp,0);
+  tfoot.innerHTML = `<tr class="tot">
+    <td>합 계</td><td>—</td>
+    <td>${f(totIb)}</td><td>${f(totDom)}</td><td>${f(totExp)}</td>
+    <td>${f(totDom+totExp)}</td><td>—</td><td>—</td><td>—</td>
+  </tr>`;
+}
+
+buildDateNav();
+render();
+
+// ── Firebase 초기화 및 실시간 동기화
+(function(){
+  firebase.initializeApp({ databaseURL: 'https://mcm-27bbd-default-rtdb.firebaseio.com' });
+  var FBDB = firebase.database();
+  // 월별로 Firebase 키를 분리 → 5월 데이터가 4월 데이터를 덮어쓰지 않음
+  var FB_KEY = 'mcm_daily_report_' + CUR_YEAR + '_' + CUR_MONTH_MM;
+
+  function setSyncBadge(msg, ok){
+    var b = document.getElementById('syncbadge');
+    if(!b) return;
+    b.innerHTML = '<span class="live-dot" style="background:'+(ok?'#059669':'#dc2626')+'"></span>'+msg;
+    b.style.color = ok?'#059669':'#dc2626';
+  }
+
+  // Firebase에서 데이터 로드
+  FBDB.ref(FB_KEY).on('value', function(snap){
+    var val = snap.val();
+    if(!val){ setSyncBadge('연결됨', true); return; }
+    try{
+      var saved = JSON.parse(val);
+      if(saved && saved.D && saved.D.length > 0){
+        DATA.length = 0;
+        saved.D.forEach(function(r){ DATA.push(r); });
+        cur = DATA.length - 1;
+        buildDateNav();
+        render();
+        var badge = document.getElementById('upstat');
+        if(badge) badge.textContent = saved.D.length + '일치 로드됨 ✓';
+      }
+      setSyncBadge('실시간 연결', true);
+    } catch(e){ setSyncBadge('데이터 오류', false); }
+  }, function(){ setSyncBadge('연결 실패', false); });
+
+  // 엑셀 파싱 함수
+  function parseDaily(binaryStr){
+    var wb = XLSX.read(binaryStr, {type:'binary', cellFormula:false, cellNF:false});
+    var sheets = wb.SheetNames.filter(function(n){ return n !== 'Grandtotal'; });
+    var result = [];
+    var days = ['일','월','화','수','목','금','토'];
+    sheets.forEach(function(sn){
+      var ws = wb.Sheets[sn];
+      if(!ws) return;
+      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
+      var pn = function(v){ if(v==null||v==='') return 0; var n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; };
+      var g = function(r,c){ return rows[r-1] ? pn(rows[r-1][c-1]) : 0; };
+      var day = parseInt(sn.slice(2));
+      if(isNaN(day)) return;
+      // 현재 월/연도 자동 적용
+      var dt = new Date(CUR_YEAR, CUR_MONTH, day);
+      var label = CUR_MONTH_MM + '/' + String(day).padStart(2,'0');
+      var th = rows[97] && rows[97][1] ? String(rows[97][1]) : '-';
+      result.push({
+        d: sn,
+        label: label,
+        day: days[dt.getDay()],
+        po: g(6,5), reg: g(6,6), tmp: g(6,7),
+        ib: g(14,13),
+        dom: g(26,13),
+        exp: g(39,13),
+        ret: g(55,13),
+        inv: g(93,13),
+        th: th
+      });
+    });
+    result.sort(function(a,b){ return parseInt(a.d)-parseInt(b.d); });
+    return result;
+  }
+
+  // 엑셀 업로드 이벤트
+  document.getElementById('fi').addEventListener('change', function(event){
+    var file = event.target.files[0]; if(!file) return;
+    var btn = document.getElementById('upbtn');
+    var st = document.getElementById('upstat');
+    btn.disabled = true; btn.textContent = '처리 중...';
+    st.textContent = '분석 중...'; st.style.color = '#d97706';
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var result = parseDaily(ev.target.result);
+        if(result.length > 0){
+          DATA.length = 0;
+          result.forEach(function(r){ DATA.push(r); });
+          cur = DATA.length - 1;
+          setSyncBadge('저장 중...', true);
+          FBDB.ref(FB_KEY).set(JSON.stringify({D: DATA, updatedAt: new Date().toISOString()}))
+            .then(function(){
+              st.textContent = result.length + '일치 업로드 완료 ✓';
+              st.style.color = '#059669';
+              setSyncBadge('실시간 연결', true);
+              buildDateNav();
+              render();
+            })
+            .catch(function(){
+              st.textContent = '저장 실패 (로컬 표시 중)';
+              st.style.color = '#dc2626';
+              buildDateNav();
+              render();
+            });
+        } else {
+          st.textContent = '데이터를 찾지 못했습니다';
+          st.style.color = '#dc2626';
+        }
+      } catch(err){
+        st.textContent = '오류: ' + err.message;
+        st.style.color = '#dc2626';
+      }
+      btn.disabled = false; btn.textContent = '📂 엑셀 업로드';
+      document.getElementById('fi').value = '';
+    };
+    reader.readAsBinaryString(file);
+  });
+})();
+</script>
+</body>
+</html>
