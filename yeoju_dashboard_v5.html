@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>여주·성주 센터 관리지표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-base:   #f0f2f7;
+  --bg-panel:  #ffffff;
+  --bg-card:   #ffffff;
+  --bg-hover:  #f5f7fc;
+  --border:    rgba(0,0,0,0.08);
+  --border-md: rgba(0,0,0,0.15);
+  --text-1: #111827;
+  --text-2: #374151;
+  --text-3: #9ca3af;
+  --accent:  #2563eb;
+  --green:   #059669;
+  --red:     #dc2626;
+  --amber:   #d97706;
+  --purple:  #7c3aed;
+  --teal:    #0d9488;
+  --font-ui:   'Pretendard', 'DM Sans', -apple-system, sans-serif;
+  --font-mono: 'Bebas Neue', monospace;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
+}
+
+html { font-size: 16px; }
+body {
+  background: var(--bg-base);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  min-height: 100vh;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  height: 62px; padding: 0 28px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+.logo { display: flex; align-items: center; gap: 12px; margin-right: 32px; flex-shrink: 0; }
+.logo-mark {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+}
+.logo-name { font-size: 16px; font-weight: 700; color: var(--text-1); }
+.logo-sub  { font-size: 12px; color: var(--text-3); }
+
+.tabs { display: flex; align-items: center; flex: 1; }
+.tab {
+  height: 62px; padding: 0 22px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 400; color: var(--text-3);
+  cursor: pointer; border: none; background: none;
+  transition: color 0.15s; white-space: nowrap; position: relative;
+}
+.tab:hover { color: var(--text-2); }
+.tab.active { color: var(--text-1); font-weight: 600; }
+.tab.active::after {
+  content: ''; position: absolute; bottom: 0; left: 22px; right: 22px;
+  height: 2px; border-radius: 2px 2px 0 0; background: var(--accent);
+}
+.tab-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.hdr-right { margin-left: auto; flex-shrink: 0; }
+.period-btn {
+  background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 7px 14px;
+  font-size: 14px; font-weight: 500; color: var(--text-2);
+  display: flex; align-items: center; gap: 6px;
+}
+.period-btn select { background: none; border: none; color: var(--text-1); font-size: 14px; font-family: var(--font-ui); cursor: pointer; outline: none; }
+.period-btn select option { background: #fff; }
+
+/* ── MAIN ── */
+.main { padding: 28px; max-width: 1440px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.sec-label { font-size: 13px; font-weight: 600; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px; }
+
+/* ── HOME CARDS ── */
+.home-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 18px; }
+.home-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 26px 28px;
+  cursor: pointer; transition: border-color 0.2s, transform 0.15s, background 0.2s, box-shadow 0.2s;
+  position: relative; overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.home-card:hover { border-color: var(--border-md); background: var(--bg-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+.home-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--r-xl) var(--r-xl) 0 0; }
+.home-card.c-blue::before   { background: var(--accent); }
+.home-card.c-green::before  { background: var(--green); }
+.home-card.c-purple::before { background: var(--purple); }
+.home-card.c-amber::before  { background: var(--amber); }
+.home-card.c-red::before    { background: var(--red); }
+.home-card.c-teal::before   { background: var(--teal); }
+
+.hc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.hc-label { font-size: 13px; font-weight: 600; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
+.hc-arrow { font-size: 18px; color: var(--text-3); transition: color 0.15s, transform 0.15s; }
+.home-card:hover .hc-arrow { color: var(--text-1); transform: translateX(4px); }
+
+.hc-value { font-family: var(--font-mono); font-size: 46px; font-weight: 400; line-height: 1; color: var(--text-1); margin-bottom: 8px; letter-spacing: 0.02em; }
+.hc-value .unit { font-size: 20px; font-weight: 400; color: var(--text-3); margin-left: 5px; font-family: var(--font-ui); font-weight: 500; }
+.hc-sub { font-size: 14px; color: var(--text-3); margin-bottom: 14px; }
+.hc-change { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 600; padding: 4px 11px; border-radius: 7px; margin-bottom: 10px; }
+.up   { color: #059669;  background: rgba(5,150,105,0.10); }
+.down { color: #dc2626;  background: rgba(220,38,38,0.10); }
+.flat { color: var(--text-3); background: rgba(0,0,0,0.05); }
+.warn { color: #d97706;  background: rgba(217,119,6,0.10); }
+
+.hc-mini-bars { display: flex; align-items: flex-end; gap: 4px; height: 36px; margin-top: auto; }
+.hc-bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 3px; }
+.hc-risks { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.hc-risk-row { display: flex; align-items: center; gap: 9px; }
+.hc-risk-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.hc-risk-text { font-size: 14px; color: var(--text-2); line-height: 1.4; }
+
+/* ── PANEL ── */
+.panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px 26px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.panel-title {
+  font-size: 14px; font-weight: 600; color: var(--text-2);
+  letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-badge { font-size: 12px; padding: 3px 10px; border-radius: 6px; background: var(--bg-hover); color: var(--text-3); text-transform: none; letter-spacing: 0; font-weight: 400; border: 1px solid var(--border); }
+
+/* ── GRIDS ── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width:960px) { .g2,.g3 { grid-template-columns:1fr; } .home-grid { grid-template-columns:1fr 1fr; } }
+
+/* ── KPI STRIP ── */
+.kpi-strip { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; margin-bottom: 18px; }
+.kpi-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 22px 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.kpi-label { font-size: 13px; color: var(--text-3); margin-bottom: 10px; font-weight: 500; }
+.kpi-val { font-family: var(--font-mono); font-size: 36px; font-weight: 400; line-height: 1; color: var(--text-1); margin-bottom: 8px; letter-spacing: 0.02em; }
+.kpi-val .u { font-size: 16px; font-weight: 500; color: var(--text-3); margin-left: 3px; font-family: var(--font-ui); }
+.kpi-note { font-size: 13px; color: var(--text-3); margin-top: 5px; }
+
+/* ── BAR ROWS ── */
+.bar-row { display: flex; flex-direction: column; gap: 16px; }
+.bar-meta { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: baseline; }
+.bar-name { font-size: 14px; color: var(--text-2); }
+.bar-v    { font-size: 14px; font-family: var(--font-mono); font-weight: 400; color: var(--text-1); letter-spacing: 0.02em; font-size: 16px; }
+.bar-track { height: 7px; background: rgba(0,0,0,0.06); border-radius: 4px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 4px; transition: width 0.7s cubic-bezier(.4,0,.2,1); }
+
+/* ── TABLE ── */
+.dt { width: 100%; border-collapse: collapse; }
+.dt th { font-size: 13px; font-weight: 600; color: var(--text-3); text-align: left; padding: 0 0 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.dt td { font-size: 15px; color: var(--text-2); padding: 12px 0; border-top: 1px solid var(--border); }
+.dt td.num { text-align: right; font-family: var(--font-mono); font-size: 17px; color: var(--text-1); font-weight: 400; letter-spacing: 0.02em; }
+.dt tr:hover td { color: var(--text-1); background: var(--bg-hover); }
+
+.dv { height: 1px; background: var(--border); margin: 18px 0; }
+.gb { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+
+/* ── RISK LIST ── */
+.risk-list { display: flex; flex-direction: column; gap: 12px; }
+.risk-item { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; border-radius: var(--r-md); background: var(--bg-hover); border: 1px solid var(--border); }
+.risk-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+.risk-title { font-size: 15px; font-weight: 600; color: var(--text-1); margin-bottom: 5px; }
+.risk-desc  { font-size: 14px; color: var(--text-3); line-height: 1.6; }
+
+/* ── COUNTRY RANK ── */
+.country-rank { display: flex; flex-direction: column; gap: 10px; }
+.cr-row { display: flex; align-items: center; gap: 10px; }
+.cr-num { font-size: 12px; color: var(--text-3); font-family: var(--font-mono); width: 16px; flex-shrink: 0; }
+.cr-name { font-size: 14px; color: var(--text-2); flex: 1; }
+.cr-bar-wrap { width: 100px; height: 6px; background: rgba(0,0,0,0.07); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+.cr-bar { height: 100%; border-radius: 3px; }
+.cr-pct { font-size: 14px; font-family: var(--font-mono); color: var(--text-1); width: 44px; text-align: right; flex-shrink: 0; letter-spacing: 0.02em; }
+
+/* ── MAP ── */
+.map-wrap { position: relative; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--border); }
+#world-map-svg, #world-map-svg-b2b { width: 100%; height: 340px; display: block; }
+
+.map-expand-btn {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid var(--border-md);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px; font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: background 0.15s, color 0.15s;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+.map-expand-btn:hover { background: rgba(37,99,235,0.1); color: var(--accent); border-color: var(--accent); }
+.map-expand-btn svg { width: 14px; height: 14px; }
+
+.map-tooltip {
+  position: absolute; pointer-events: none;
+  background: rgba(255,255,255,0.98); border: 1px solid var(--border-md);
+  border-radius: var(--r-md); padding: 14px 18px;
+  opacity: 0; transition: opacity 0.15s;
+  min-width: 200px; z-index: 999;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+.tt-country { font-size: 16px; font-weight: 700; color: var(--text-1); margin-bottom: 5px; }
+.tt-cont    { font-size: 13px; color: var(--text-3); margin-bottom: 8px; }
+.tt-pcs     { font-family: var(--font-mono); font-size: 26px; font-weight: 400; margin-bottom: 4px; letter-spacing: 0.02em; }
+.tt-pct     { font-size: 14px; color: var(--text-3); }
+.tt-bar     { height: 4px; border-radius: 2px; margin-top: 10px; }
+
+.map-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-2); background: #fff; padding: 5px 11px; border-radius: 6px; border: 1px solid var(--border); }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* ══ MODAL ══ */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9000;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r-xl);
+  width: 95vw; max-width: 1300px;
+  padding: 28px 30px;
+  position: relative;
+  max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.modal-title { font-size: 18px; font-weight: 700; color: var(--text-1); }
+.modal-sub   { font-size: 14px; color: var(--text-3); margin-top: 2px; }
+.modal-close {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--bg-hover); border: 1px solid var(--border);
+  color: var(--text-2); font-size: 20px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s; flex-shrink: 0;
+}
+.modal-close:hover { background: rgba(220,38,38,0.1); color: var(--red); }
+
+.modal-map-wrap { position: relative; border-radius: var(--r-md); overflow: hidden; margin-bottom: 20px; border: 1px solid var(--border); }
+#modal-map-svg { width: 100%; height: 500px; display: block; }
+
+.modal-map-tooltip {
+  position: absolute; pointer-events: none;
+  background: rgba(255,255,255,0.98); border: 1px solid var(--border-md);
+  border-radius: var(--r-md); padding: 14px 18px;
+  opacity: 0; transition: opacity 0.15s;
+  min-width: 210px; z-index: 999;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.14);
+}
+
+.modal-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.modal-rank-title { font-size: 13px; font-weight: 600; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 16px; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ══ MODAL ══ -->
+<div class="modal-overlay" id="map-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">수출 국가별 출고 현황</div>
+        <div class="modal-sub">2026년 3월 · 수출 총 81,449 PCS 기준 · 나라 위에 마우스를 올려보세요</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-map-wrap">
+      <svg id="modal-map-svg"></svg>
+      <div class="modal-map-tooltip" id="modal-tooltip">
+        <div class="tt-country" id="modal-tt-country"></div>
+        <div class="tt-cont" id="modal-tt-cont"></div>
+        <div class="tt-pcs" id="modal-tt-pcs"></div>
+        <div class="tt-pct" id="modal-tt-pct"></div>
+        <div class="tt-bar" id="modal-tt-bar"></div>
+      </div>
+    </div>
+
+    <div class="map-legend" style="margin-bottom:24px">
+      <div class="legend-item"><div class="legend-dot" style="background:#d1d5db"></div>출고 없음</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1d5fa8"></div>소량 1% 미만</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2979d4"></div>유럽권</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3ecf8e"></div>미주권</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff9a5c"></div>아시아 기타</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff4500"></div>중국 44.1%</div>
+    </div>
+
+    <div class="modal-bottom">
+      <div>
+        <div class="modal-rank-title">국가별 출고 순위 TOP 10</div>
+        <div class="country-rank" id="modal-rank">
+          <div class="cr-row"><span class="cr-num">1</span><span class="cr-name">🇨🇳 중국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:100%;background:#ff4500"></div></div><span class="cr-pct" style="color:#ff4500">44.1%</span></div>
+          <div class="cr-row"><span class="cr-num">2</span><span class="cr-name">🇺🇸 미국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:47%;background:#059669"></div></div><span class="cr-pct">20.9%</span></div>
+          <div class="cr-row"><span class="cr-num">3</span><span class="cr-name">🇩🇪 독일</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:38%;background:#2979d4"></div></div><span class="cr-pct">16.6%</span></div>
+          <div class="cr-row"><span class="cr-num">4</span><span class="cr-name">🇭🇰 홍콩</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:20%;background:#ff7a3d"></div></div><span class="cr-pct">8.7%</span></div>
+          <div class="cr-row"><span class="cr-num">5</span><span class="cr-name">🇹🇭 태국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:5%;background:#ff9a5c"></div></div><span class="cr-pct">2.3%</span></div>
+          <div class="cr-row"><span class="cr-num">6</span><span class="cr-name">🇬🇧 영국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:4%;background:#2979d4"></div></div><span class="cr-pct">1.8%</span></div>
+          <div class="cr-row"><span class="cr-num">7</span><span class="cr-name">🇯🇵 일본</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:3%;background:#ff9a5c"></div></div><span class="cr-pct">1.4%</span></div>
+          <div class="cr-row"><span class="cr-num">8</span><span class="cr-name">🇸🇬 싱가포르</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:2%;background:#ff9a5c"></div></div><span class="cr-pct">1.0%</span></div>
+          <div class="cr-row"><span class="cr-num">9</span><span class="cr-name">🇦🇪 UAE</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:2%;background:#1d5fa8"></div></div><span class="cr-pct">0.7%</span></div>
+          <div class="cr-row"><span class="cr-num">10</span><span class="cr-name">🇺🇾 우루과이</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:2%;background:#059669"></div></div><span class="cr-pct">0.8%</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="modal-rank-title">대륙별 합산</div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div class="bar-meta"><span class="bar-name">아시아 (중국·홍콩 포함)</span><span class="bar-v" style="color:#ff7a3d">63,680 PCS · 78.2%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:78.2%;background:linear-gradient(90deg,#ff4500,#ff9a5c)"></div></div>
+          </div>
+          <div>
+            <div class="bar-meta"><span class="bar-name">미주</span><span class="bar-v" style="color:#059669">10,265 PCS · 12.6%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:12.6%;background:#059669"></div></div>
+          </div>
+          <div>
+            <div class="bar-meta"><span class="bar-name">유럽</span><span class="bar-v" style="color:#2979d4">5,908 PCS · 7.3%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:7.3%;background:#2979d4"></div></div>
+          </div>
+          <div>
+            <div class="bar-meta"><span class="bar-name">중동</span><span class="bar-v" style="color:#1d5fa8">281 PCS · 0.3%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:0.3%;background:#1d5fa8"></div></div>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:16px;background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.2);border-radius:10px">
+          <div style="font-size:14px;font-weight:600;color:var(--amber);margin-bottom:6px">⚠ 중국 편중 리스크</div>
+          <div style="font-size:14px;color:var(--text-3);line-height:1.6">중국+홍콩 합산 <strong style="color:var(--text-1)">52.8%</strong> — 중국 단독 44.1%. 특정 국가 이슈 발생 시 즉각적인 출고 영향 예상.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-mark">CJ</div>
+    <div>
+      <div class="logo-name">여주·성주 센터</div>
+      <div class="logo-sub">Operation Control Tower</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" onclick="switchTab('home',this)"><span class="tab-dot" style="background:#2563eb"></span> 홈</button>
+    <button class="tab" onclick="switchTab('b2b',this)"><span class="tab-dot" style="background:#059669"></span> B2B 출고</button>
+    <button class="tab" onclick="switchTab('b2c',this)"><span class="tab-dot" style="background:#7c3aed"></span> B2C 출고</button>
+    <button class="tab" onclick="switchTab('inventory',this)"><span class="tab-dot" style="background:#d97706"></span> 재고 현황</button>
+    <button class="tab" onclick="switchTab('risk',this)"><span class="tab-dot" style="background:#dc2626"></span> 운영 리스크</button>
+  </nav>
+  <div class="hdr-right">
+    <div class="period-btn">기준월&nbsp;<select><option>2026-03</option><option>2026-02</option><option>2026-01</option></select></div>
+  </div>
+</header>
+
+<main class="main">
+
+<!-- ══ HOME ══ -->
+<div id="tab-home" class="tab-content active">
+  <div class="sec-label">전체 현황 — 2026년 3월</div>
+  <div class="home-grid">
+
+    <div class="home-card c-green" onclick="switchTab('b2b',document.querySelectorAll('.tab')[1])">
+      <div class="hc-header"><span class="hc-label">B2B 출고</span><span class="hc-arrow">→</span></div>
+      <div class="hc-value">86,434<span class="unit">PCS</span></div>
+      <div class="hc-sub">SKU 2,977종 · BOX 12,711</div>
+      <span class="hc-change up">▲ 177.4% 전월 대비</span>
+      <div class="hc-mini-bars">
+        <div class="hc-bar" style="height:93%;background:rgba(5,150,105,0.15)"></div>
+        <div class="hc-bar" style="height:36%;background:rgba(5,150,105,0.15)"></div>
+        <div class="hc-bar" style="height:100%;background:rgba(5,150,105,0.5)"></div>
+      </div>
+    </div>
+
+    <div class="home-card c-blue" onclick="switchTab('b2b',document.querySelectorAll('.tab')[1])">
+      <div class="hc-header"><span class="hc-label">수출 현황</span><span class="hc-arrow">→</span></div>
+      <div class="hc-value">81,449<span class="unit">PCS</span></div>
+      <div class="hc-sub">전체 출고의 94.2% · 21개국</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:var(--text-3);width:50px">중국</span><div style="flex:1;height:6px;background:rgba(0,0,0,0.07);border-radius:3px;overflow:hidden"><div style="height:100%;width:44.1%;background:#ff4500;border-radius:3px"></div></div><span style="font-size:14px;font-family:var(--font-mono);color:var(--text-1);width:40px;text-align:right">44.1%</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:var(--text-3);width:50px">미국</span><div style="flex:1;height:6px;background:rgba(0,0,0,0.07);border-radius:3px;overflow:hidden"><div style="height:100%;width:20.9%;background:#059669;border-radius:3px"></div></div><span style="font-size:14px;font-family:var(--font-mono);color:var(--text-1);width:40px;text-align:right">20.9%</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:var(--text-3);width:50px">독일</span><div style="flex:1;height:6px;background:rgba(0,0,0,0.07);border-radius:3px;overflow:hidden"><div style="height:100%;width:16.6%;background:#2979d4;border-radius:3px"></div></div><span style="font-size:14px;font-family:var(--font-mono);color:var(--text-1);width:40px;text-align:right">16.6%</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:var(--text-3);width:50px">홍콩</span><div style="flex:1;height:6px;background:rgba(0,0,0,0.07);border-radius:3px;overflow:hidden"><div style="height:100%;width:8.7%;background:#ff7a3d;border-radius:3px"></div></div><span style="font-size:14px;font-family:var(--font-mono);color:var(--text-1);width:40px;text-align:right">8.7%</span></div>
+      </div>
+    </div>
+
+    <div class="home-card c-purple" onclick="switchTab('b2c',document.querySelectorAll('.tab')[2])">
+      <div class="hc-header"><span class="hc-label">B2C 출고</span><span class="hc-arrow">→</span></div>
+      <div class="hc-value">6,281<span class="unit">PCS</span></div>
+      <div class="hc-sub">면세 2,733 · 백화 2,680 · 아울렛 868</div>
+      <span class="hc-change down">▼ 34.3% 전년 동월</span>
+      <div class="dv" style="margin:12px 0 10px"></div>
+      <div style="display:flex;gap:16px">
+        <div><div style="font-size:12px;color:var(--text-3)">면세</div><div style="font-size:20px;font-weight:400;font-family:var(--font-mono);color:var(--red)">▼62%</div></div>
+        <div><div style="font-size:12px;color:var(--text-3)">백화점</div><div style="font-size:20px;font-weight:400;font-family:var(--font-mono);color:var(--green)">▲52%</div></div>
+        <div><div style="font-size:12px;color:var(--text-3)">아울렛</div><div style="font-size:20px;font-weight:400;font-family:var(--font-mono);color:var(--green)">▲59%</div></div>
+      </div>
+    </div>
+
+    <div class="home-card c-amber" onclick="switchTab('inventory',document.querySelectorAll('.tab')[3])">
+      <div class="hc-header"><span class="hc-label">재고 현황</span><span class="hc-arrow">→</span></div>
+      <div class="hc-value">92,562<span class="unit">PCS</span></div>
+      <div class="hc-sub">관리 SKU 3,964종 · LOC 1,337</div>
+      <span class="hc-change up">▲ 14.5% 전월 대비</span>
+      <div class="dv" style="margin:12px 0 10px"></div>
+      <div style="display:flex;gap:16px">
+        <div><div style="font-size:12px;color:var(--text-3)">SKU당 PCS</div><div style="font-size:20px;font-weight:400;font-family:var(--font-mono)">23.4</div></div>
+        <div><div style="font-size:12px;color:var(--text-3)">LLG 비중</div><div style="font-size:20px;font-weight:400;font-family:var(--font-mono);color:var(--amber)">86.3%</div></div>
+      </div>
+    </div>
+
+    <div class="home-card c-red" onclick="switchTab('inventory',document.querySelectorAll('.tab')[3])">
+      <div class="hc-header"><span class="hc-label">장기체류 재고</span><span class="hc-arrow">→</span></div>
+      <div class="hc-value">2,926<span class="unit">PCS</span></div>
+      <div class="hc-sub">1년 이상 체류 기준</div>
+      <span class="hc-change warn">⚠ 전체의 3.2%</span>
+      <div class="hc-risks" style="margin-top:12px">
+        <div class="hc-risk-row"><div class="hc-risk-dot" style="background:var(--red)"></div><span class="hc-risk-text">SAMPLE 3년+ 1,348 PCS 최우선</span></div>
+        <div class="hc-risk-row"><div class="hc-risk-dot" style="background:var(--amber)"></div><span class="hc-risk-text">SQ 창고 3년+ 340 PCS</span></div>
+      </div>
+    </div>
+
+    <div class="home-card c-teal" onclick="switchTab('risk',document.querySelectorAll('.tab')[4])">
+      <div class="hc-header"><span class="hc-label">운영 리스크</span><span class="hc-arrow">→</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px">
+        <span style="font-family:var(--font-mono);font-size:52px;font-weight:400;color:var(--red)">2</span>
+        <span style="font-size:15px;color:var(--text-3)">긴급</span>
+        <span style="font-family:var(--font-mono);font-size:52px;font-weight:400;color:var(--amber);margin-left:10px">3</span>
+        <span style="font-size:15px;color:var(--text-3)">주의</span>
+      </div>
+      <div class="hc-risks">
+        <div class="hc-risk-row"><div class="hc-risk-dot" style="background:var(--red)"></div><span class="hc-risk-text">SAMPLE 장기체류 · 면세 채널 급감</span></div>
+        <div class="hc-risk-row"><div class="hc-risk-dot" style="background:var(--amber)"></div><span class="hc-risk-text">중국 편중 44% · LLG 재고 급증</span></div>
+        <div class="hc-risk-row"><div class="hc-risk-dot" style="background:var(--amber)"></div><span class="hc-risk-text">화~목 출고 집중 66.9%</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- WORLD MAP PANEL -->
+  <div class="panel">
+    <div class="panel-title">
+      수출 국가별 출고 현황
+      <span class="panel-badge">3월 · 수출 PCS 81,449 기준</span>
+    </div>
+    <div style="display:flex;gap:22px;align-items:flex-start">
+      <div style="flex:1.8">
+        <div class="map-wrap">
+          <svg id="world-map-svg"></svg>
+          <button class="map-expand-btn" onclick="openModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            확대
+          </button>
+          <div class="map-tooltip" id="map-tooltip">
+            <div class="tt-country" id="tt-country"></div>
+            <div class="tt-cont" id="tt-cont"></div>
+            <div class="tt-pcs" id="tt-pcs"></div>
+            <div class="tt-pct" id="tt-pct"></div>
+            <div class="tt-bar" id="tt-bar"></div>
+          </div>
+        </div>
+        <div class="map-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#d1d5db"></div>출고 없음</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1d5fa8"></div>소량</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2979d4"></div>유럽</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>미주</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ff9a5c"></div>아시아 기타</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ff4500"></div>중국 44.1%</div>
+        </div>
+      </div>
+      <div style="flex:0.8;min-width:230px">
+        <div style="font-size:13px;font-weight:600;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:16px">국가별 순위</div>
+        <div class="country-rank">
+          <div class="cr-row"><span class="cr-num">1</span><span class="cr-name">🇨🇳 중국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:100%;background:#ff4500"></div></div><span class="cr-pct" style="color:#ff4500">44.1%</span></div>
+          <div class="cr-row"><span class="cr-num">2</span><span class="cr-name">🇺🇸 미국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:47%;background:#059669"></div></div><span class="cr-pct">20.9%</span></div>
+          <div class="cr-row"><span class="cr-num">3</span><span class="cr-name">🇩🇪 독일</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:38%;background:#2979d4"></div></div><span class="cr-pct">16.6%</span></div>
+          <div class="cr-row"><span class="cr-num">4</span><span class="cr-name">🇭🇰 홍콩</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:20%;background:#ff7a3d"></div></div><span class="cr-pct">8.7%</span></div>
+          <div class="cr-row"><span class="cr-num">5</span><span class="cr-name">🇹🇭 태국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:5%;background:#ff9a5c"></div></div><span class="cr-pct">2.3%</span></div>
+          <div class="cr-row"><span class="cr-num">6</span><span class="cr-name">🇬🇧 영국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:4%;background:#2979d4"></div></div><span class="cr-pct">1.8%</span></div>
+          <div class="cr-row"><span class="cr-num">7</span><span class="cr-name">🇯🇵 일본</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:3%;background:#ff9a5c"></div></div><span class="cr-pct">1.4%</span></div>
+          <div class="cr-row"><span class="cr-num">8</span><span class="cr-name">🇸🇬 싱가포르</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:2%;background:#ff9a5c"></div></div><span class="cr-pct">1.0%</span></div>
+          <div class="cr-row"><span class="cr-num">9</span><span class="cr-name">🇦🇪 UAE</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:2%;background:#1d5fa8"></div></div><span class="cr-pct">0.7%</span></div>
+          <div class="cr-row"><span class="cr-num">10</span><span class="cr-name">🇺🇾 우루과이</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:2%;background:#059669"></div></div><span class="cr-pct">0.8%</span></div>
+        </div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+          중국+홍콩 합산 <span style="color:var(--amber);font-weight:700">52.8%</span> — 편중 리스크 주의
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ B2B ══ -->
+<div id="tab-b2b" class="tab-content">
+  <div class="sec-label">B2B 출고 — 2026년 3월</div>
+  <div class="kpi-strip">
+    <div class="kpi-card" style="border-top:3px solid var(--green)"><div class="kpi-label">월 출고 PCS</div><div class="kpi-val">86,434<span class="u">PCS</span></div><span class="hc-change up" style="font-size:13px">▲ 177.4%</span><div class="kpi-note">전월 31,156 / 전년 50,079</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--accent)"><div class="kpi-label">출고 SKU</div><div class="kpi-val">2,977<span class="u">종</span></div><span class="hc-change up" style="font-size:13px">▲ 56.0%</span><div class="kpi-note">전월 1,909종</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--accent)"><div class="kpi-label">출고 BOX</div><div class="kpi-val">12,711<span class="u">BOX</span></div><span class="hc-change up" style="font-size:13px">▲ 177.4%</span></div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-label">SKU당 PCS</div><div class="kpi-val">29.0</div><span class="hc-change up" style="font-size:13px">▲ 전월 16.3</span><div class="kpi-note">전년동월 18.9</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--purple)"><div class="kpi-label">수출 비중</div><div class="kpi-val">94.2<span class="u">%</span></div><span class="hc-change flat" style="font-size:13px">— 전월 유사</span><div class="kpi-note">81,449 / 86,434 PCS</div></div>
+  </div>
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-title">수출 국가별 분포 <span class="panel-badge">3월 세계지도</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start">
+      <div style="flex:1.8">
+        <div class="map-wrap">
+          <svg id="world-map-svg-b2b"></svg>
+          <button class="map-expand-btn" onclick="openModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            확대
+          </button>
+          <div class="map-tooltip" id="map-tooltip-b2b">
+            <div class="tt-country" id="tt-country-b2b"></div>
+            <div class="tt-cont" id="tt-cont-b2b"></div>
+            <div class="tt-pcs" id="tt-pcs-b2b"></div>
+            <div class="tt-pct" id="tt-pct-b2b"></div>
+            <div class="tt-bar" id="tt-bar-b2b"></div>
+          </div>
+        </div>
+        <div class="map-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#d1d5db"></div>출고 없음</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ff9a5c"></div>아시아 기타</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2979d4"></div>유럽</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>미주</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ff4500"></div>중국 44.1%</div>
+        </div>
+      </div>
+      <div style="flex:0.8;min-width:230px">
+        <div style="font-size:13px;font-weight:600;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:16px">국가별 순위</div>
+        <div class="country-rank">
+          <div class="cr-row"><span class="cr-num">1</span><span class="cr-name">🇨🇳 중국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:100%;background:#ff4500"></div></div><span class="cr-pct" style="color:#ff4500">44.1%</span></div>
+          <div class="cr-row"><span class="cr-num">2</span><span class="cr-name">🇺🇸 미국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:47%;background:#059669"></div></div><span class="cr-pct">20.9%</span></div>
+          <div class="cr-row"><span class="cr-num">3</span><span class="cr-name">🇩🇪 독일</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:38%;background:#2979d4"></div></div><span class="cr-pct">16.6%</span></div>
+          <div class="cr-row"><span class="cr-num">4</span><span class="cr-name">🇭🇰 홍콩</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:20%;background:#ff7a3d"></div></div><span class="cr-pct">8.7%</span></div>
+          <div class="cr-row"><span class="cr-num">5</span><span class="cr-name">🇹🇭 태국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:5%;background:#ff9a5c"></div></div><span class="cr-pct">2.3%</span></div>
+          <div class="cr-row"><span class="cr-num">6</span><span class="cr-name">🇬🇧 영국</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:4%;background:#2979d4"></div></div><span class="cr-pct">1.8%</span></div>
+          <div class="cr-row"><span class="cr-num">7</span><span class="cr-name">🇯🇵 일본</span><div class="cr-bar-wrap"><div class="cr-bar" style="width:3%;background:#ff9a5c"></div></div><span class="cr-pct">1.4%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="panel">
+      <div class="panel-title">대륙별 전년 대비 <span class="panel-badge">PCS</span></div>
+      <table class="dt">
+        <thead><tr><th>대륙</th><th>25년 3월</th><th>26년 3월</th><th>증감</th></tr></thead>
+        <tbody>
+          <tr><td>아시아</td><td class="num">24,046</td><td class="num">63,680</td><td class="num" style="color:var(--green)">▲ 164.8%</td></tr>
+          <tr><td>미주</td><td class="num">7,281</td><td class="num">10,265</td><td class="num" style="color:var(--green)">▲ 41.0%</td></tr>
+          <tr><td>유럽</td><td class="num">9,039</td><td class="num">5,908</td><td class="num" style="color:var(--red)">▼ 34.6%</td></tr>
+          <tr><td>중동</td><td class="num">156</td><td class="num">281</td><td class="num" style="color:var(--green)">▲ 80.1%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-title">3개년 월별 비교 <span class="panel-badge">PCS</span></div>
+      <table class="dt">
+        <thead><tr><th>월</th><th>2024년</th><th>2025년</th><th>2026년</th><th>YoY</th></tr></thead>
+        <tbody>
+          <tr><td>1월</td><td class="num">94,015</td><td class="num">45,335</td><td class="num" style="color:var(--accent)">80,717</td><td class="num" style="color:var(--green)">▲ 78.1%</td></tr>
+          <tr><td>2월</td><td class="num">46,026</td><td class="num">35,683</td><td class="num" style="color:var(--accent)">31,156</td><td class="num" style="color:var(--red)">▼ 12.7%</td></tr>
+          <tr><td>3월</td><td class="num">85,216</td><td class="num">50,079</td><td class="num" style="color:var(--accent)">86,434</td><td class="num" style="color:var(--green)">▲ 72.6%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ B2C ══ -->
+<div id="tab-b2c" class="tab-content">
+  <div class="sec-label">B2C 출고 — 2026년 3월</div>
+  <div class="kpi-strip">
+    <div class="kpi-card" style="border-top:3px solid var(--purple)"><div class="kpi-label">월 출고 PCS</div><div class="kpi-val">6,281<span class="u">PCS</span></div><span class="hc-change down" style="font-size:13px">▼ 34.3% 전년</span></div>
+    <div class="kpi-card" style="border-top:3px solid var(--red)"><div class="kpi-label">면세점</div><div class="kpi-val">2,733<span class="u">PCS</span></div><span class="hc-change down" style="font-size:13px">▼ 62.3% 전년</span><div class="kpi-note">전년 7,244 PCS</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--green)"><div class="kpi-label">백화점</div><div class="kpi-val">2,680<span class="u">PCS</span></div><span class="hc-change up" style="font-size:13px">▲ 51.6% 전년</span><div class="kpi-note">전년 1,768 PCS</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-label">아울렛</div><div class="kpi-val">868<span class="u">PCS</span></div><span class="hc-change up" style="font-size:13px">▲ 59.3% 전년</span><div class="kpi-note">전년 545 PCS</div></div>
+    <div class="kpi-card" style="border-top:3px solid var(--purple)"><div class="kpi-label">출고 건수</div><div class="kpi-val">159<span class="u">건</span></div><span class="hc-change down" style="font-size:13px">▼ 18.9% 전년</span></div>
+  </div>
+  <div class="g2">
+    <div class="panel">
+      <div class="panel-title">채널별 구성 <span class="panel-badge">3월</span></div>
+      <div class="bar-row">
+        <div><div class="bar-meta"><span class="bar-name">면세점</span><span class="bar-v">2,733 · 43.5%</span></div><div class="bar-track"><div class="bar-fill" style="width:43.5%;background:var(--red)"></div></div></div>
+        <div><div class="bar-meta"><span class="bar-name">백화점</span><span class="bar-v">2,680 · 42.7%</span></div><div class="bar-track"><div class="bar-fill" style="width:42.7%;background:var(--accent)"></div></div></div>
+        <div><div class="bar-meta"><span class="bar-name">아울렛</span><span class="bar-v">868 · 13.8%</span></div><div class="bar-track"><div class="bar-fill" style="width:13.8%;background:var(--amber)"></div></div></div>
+      </div>
+      <div class="dv"></div>
+      <div style="font-size:14px;color:var(--text-3)">면세 비중 전년 75.8% → 43.5% 급감 — 백화점이 역전</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">채널 3개년 비교 <span class="panel-badge">1Q 합계</span></div>
+      <table class="dt">
+        <thead><tr><th>채널</th><th>2024년 1Q</th><th>2025년 1Q</th><th>2026년 1Q</th><th>YoY</th></tr></thead>
+        <tbody>
+          <tr><td>면세점</td><td class="num">26,776</td><td class="num">21,558</td><td class="num">7,902</td><td class="num" style="color:var(--red)">▼ 63.4%</td></tr>
+          <tr><td>백화점</td><td class="num">6,643</td><td class="num">4,654</td><td class="num">7,806</td><td class="num" style="color:var(--green)">▲ 67.7%</td></tr>
+          <tr><td>아울렛</td><td class="num">1,734</td><td class="num">1,753</td><td class="num">1,384</td><td class="num" style="color:var(--red)">▼ 21.1%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INVENTORY ══ -->
+<div id="tab-inventory" class="tab-content">
+  <div class="sec-label">재고 현황 — 2026년 3월 말</div>
+  <div class="kpi-strip">
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-label">총 재고 PCS</div><div class="kpi-val">92,562<span class="u">PCS</span></div><span class="hc-change up" style="font-size:13px">▲ 14.5%</span></div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-label">관리 SKU</div><div class="kpi-val">3,964<span class="u">종</span></div><span class="hc-change up" style="font-size:13px">▲ 4.0%</span></div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-label">LOC 수</div><div class="kpi-val">1,337</div><span class="hc-change flat" style="font-size:13px">— 전월 유사</span></div>
+    <div class="kpi-card" style="border-top:3px solid var(--red)"><div class="kpi-label">장기체류 PCS</div><div class="kpi-val">2,926<span class="u">PCS</span></div><span class="hc-change warn" style="font-size:13px">⚠ 3.2%</span></div>
+    <div class="kpi-card" style="border-top:3px solid var(--amber)"><div class="kpi-label">SKU당 PCS</div><div class="kpi-val">23.4</div><span class="hc-change up" style="font-size:13px">▲ 전월 21.2</span></div>
+  </div>
+  <div class="g2">
+    <div class="panel">
+      <div class="panel-title">창고별 장기체류 <span class="panel-badge">체류 연도별 PCS</span></div>
+      <table class="dt">
+        <thead><tr><th>창고</th><th>1년+</th><th>2년+</th><th>3년+</th></tr></thead>
+        <tbody>
+          <tr><td>EC창고</td><td class="num" style="color:var(--amber)">606</td><td class="num">62</td><td class="num" style="color:var(--red)">341</td></tr>
+          <tr><td>수출창고</td><td class="num">158</td><td class="num">11</td><td class="num">82</td></tr>
+          <tr><td>아울렛</td><td class="num" style="color:var(--amber)">767</td><td class="num">72</td><td class="num" style="color:var(--amber)">84</td></tr>
+          <tr><td>SQ</td><td class="num" style="color:var(--amber)">634</td><td class="num" style="color:var(--red)">331</td><td class="num" style="color:var(--red)">340</td></tr>
+          <tr><td>SAMPLE</td><td class="num">68</td><td class="num" style="color:var(--amber)">92</td><td class="num" style="color:var(--red)">1,348</td></tr>
+          <tr><td>불량창고</td><td class="num">235</td><td class="num" style="color:var(--amber)">93</td><td class="num">61</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:14px;color:var(--red);margin-top:12px">SAMPLE 3년+ 1,348 PCS — 즉시 소진 검토 필요</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">그룹별 재고 <span class="panel-badge">3월</span></div>
+      <div class="bar-row">
+        <div><div class="bar-meta"><span class="bar-name"><span class="gb" style="background:rgba(124,58,237,0.12);color:var(--purple)">LLG</span>가죽잡화</span><span class="bar-v">79,918</span></div><div class="bar-track"><div class="bar-fill" style="width:86.3%;background:var(--purple)"></div></div><div style="font-size:13px;color:var(--amber);margin-top:3px">전년 대비 ▲ 64.1% 급증</div></div>
+        <div><div class="bar-meta"><span class="bar-name"><span class="gb" style="background:rgba(217,119,6,0.12);color:var(--amber)">SLG</span>소형잡화</span><span class="bar-v">5,557</span></div><div class="bar-track"><div class="bar-fill" style="width:6%;background:var(--amber)"></div></div></div>
+        <div><div class="bar-meta"><span class="bar-name"><span class="gb" style="background:rgba(37,99,235,0.12);color:var(--accent)">ACC</span>악세서리</span><span class="bar-v">3,789</span></div><div class="bar-track"><div class="bar-fill" style="width:4.1%;background:var(--accent)"></div></div></div>
+        <div><div class="bar-meta"><span class="bar-name"><span class="gb" style="background:rgba(5,150,105,0.12);color:var(--green)">RTW</span>의류</span><span class="bar-v">3,298</span></div><div class="bar-track"><div class="bar-fill" style="width:3.6%;background:var(--green)"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RISK ══ -->
+<div id="tab-risk" class="tab-content">
+  <div class="sec-label">운영 리스크 — 2026년 3월 기준</div>
+  <div class="g2">
+    <div class="panel">
+      <div class="panel-title" style="color:var(--red)">● 긴급 — 즉시 조치</div>
+      <div class="risk-list">
+        <div class="risk-item" style="border-color:rgba(220,38,38,0.18);background:rgba(220,38,38,0.03)"><div class="risk-dot" style="background:var(--red)"></div><div><div class="risk-title">SAMPLE 창고 3년+ 장기체류 1,348 PCS</div><div class="risk-desc">전체 창고 중 3년+ 최다. 반품·프로모션·이동 적재 즉시 검토.</div></div></div>
+        <div class="risk-item" style="border-color:rgba(220,38,38,0.18);background:rgba(220,38,38,0.03)"><div class="risk-dot" style="background:var(--red)"></div><div><div class="risk-title">B2C 면세 채널 전년 대비 ▼ 62.3%</div><div class="risk-desc">1Q26 면세 7,902 vs 1Q25 21,558 PCS. 백화점 전환 중이나 전체 미달.</div></div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title" style="color:var(--amber)">● 주의 — 지속 모니터링</div>
+      <div class="risk-list">
+        <div class="risk-item" style="border-color:rgba(217,119,6,0.18);background:rgba(217,119,6,0.03)"><div class="risk-dot" style="background:var(--amber)"></div><div><div class="risk-title">중국 수출 편중 44.1% (홍콩 포함 52.8%)</div><div class="risk-desc">수출 81,449 PCS 중 중국 단독 44%. 이슈 발생 시 즉각 영향.</div></div></div>
+        <div class="risk-item" style="border-color:rgba(217,119,6,0.18);background:rgba(217,119,6,0.03)"><div class="risk-dot" style="background:var(--amber)"></div><div><div class="risk-title">LLG 재고 전년 대비 ▲ 64.1% 급증</div><div class="risk-desc">79,918 PCS. 출고 예정 확인 및 과잉 여부 점검 필요.</div></div></div>
+        <div class="risk-item" style="border-color:rgba(217,119,6,0.18);background:rgba(217,119,6,0.03)"><div class="risk-dot" style="background:var(--amber)"></div><div><div class="risk-title">화·수·목 출고 집중 66.9%</div><div class="risk-desc">월·금 인력 여유, 화~목 과부하. 주간 피킹 평준화 검토.</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="panel-title">월별 리스크 지표 추세 <span class="panel-badge">26년 1Q</span></div>
+    <table class="dt">
+      <thead><tr><th>지표</th><th>1월</th><th>2월</th><th>3월</th><th>방향</th></tr></thead>
+      <tbody>
+        <tr><td>B2B 출고 PCS</td><td class="num">80,717</td><td class="num">31,156</td><td class="num" style="color:var(--accent)">86,434</td><td class="num" style="color:var(--green)">▲ 회복</td></tr>
+        <tr><td>중국 수출 비중</td><td class="num">—</td><td class="num">—</td><td class="num" style="color:var(--amber)">44.1%</td><td class="num" style="color:var(--amber)">— 모니터링</td></tr>
+        <tr><td>면세 출고 PCS</td><td class="num">2,932</td><td class="num">2,237</td><td class="num">2,733</td><td class="num" style="color:var(--green)">▲ 소폭 회복</td></tr>
+        <tr><td>재고 PCS</td><td class="num">70,601</td><td class="num">80,790</td><td class="num" style="color:var(--amber)">92,562</td><td class="num" style="color:var(--amber)">▲ 증가 추세</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<script>
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'b2b' && !window._mapB2bDrawn) {
+    setTimeout(() => drawMap('world-map-svg-b2b','map-tooltip-b2b','tt-country-b2b','tt-cont-b2b','tt-pcs-b2b','tt-pct-b2b','tt-bar-b2b', false), 80);
+    window._mapB2bDrawn = true;
+  }
+}
+
+function openModal() {
+  document.getElementById('map-modal').classList.add('open');
+  if (!window._modalMapDrawn) {
+    setTimeout(() => drawMap('modal-map-svg','modal-tooltip','modal-tt-country','modal-tt-cont','modal-tt-pcs','modal-tt-pct','modal-tt-bar', true), 80);
+    window._modalMapDrawn = true;
+  }
+}
+function closeModal() {
+  document.getElementById('map-modal').classList.remove('open');
+}
+document.getElementById('map-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+const countryData = {
+  'CHN': { name:'중국',        pct: 44.07, color:'#ff4500' },
+  'USA': { name:'미국',        pct: 20.85, color:'#059669' },
+  'DEU': { name:'독일',        pct: 16.59, color:'#2979d4' },
+  'HKG': { name:'홍콩',        pct:  8.66, color:'#ff7a3d' },
+  'THA': { name:'태국',        pct:  2.28, color:'#ff9a5c' },
+  'GBR': { name:'영국',        pct:  1.75, color:'#2979d4' },
+  'JPN': { name:'일본',        pct:  1.40, color:'#ff9a5c' },
+  'SGP': { name:'싱가포르',    pct:  0.98, color:'#ff9a5c' },
+  'URY': { name:'우루과이',    pct:  0.76, color:'#059669' },
+  'UAE': { name:'UAE',         pct:  0.71, color:'#1d5fa8' },
+  'MYS': { name:'말레이시아',  pct:  0.55, color:'#ff9a5c' },
+  'VNM': { name:'베트남',      pct:  0.41, color:'#ff9a5c' },
+  'QAT': { name:'카타르',      pct:  0.15, color:'#1d5fa8' },
+  'TWN': { name:'대만',        pct:  0.12, color:'#ff9a5c' },
+  'SAU': { name:'사우디',      pct:  0.12, color:'#1d5fa8' },
+  'IDN': { name:'인도네시아',  pct:  0.22, color:'#ff9a5c' },
+  'ITA': { name:'이탈리아',    pct:  0.05, color:'#2979d4' },
+  'BHR': { name:'바레인',      pct:  0.05, color:'#1d5fa8' },
+  'PHL': { name:'필리핀',      pct:  0.05, color:'#ff9a5c' },
+  'MAC': { name:'마카오',      pct:  0.06, color:'#ff9a5c' },
+  'PAN': { name:'파나마',      pct:  0.09, color:'#059669' },
+  'CAN': { name:'캐나다',      pct:  0.07, color:'#059669' },
+  'KWT': { name:'쿠웨이트',    pct:  0.01, color:'#1d5fa8' },
+};
+
+const iso = {
+  156:'CHN',392:'JPN',410:'KOR',158:'TWN',344:'HKG',446:'MAC',702:'SGP',
+  458:'MYS',764:'THA',704:'VNM',360:'IDN',608:'PHL',276:'DEU',826:'GBR',
+  840:'USA',124:'CAN',484:'MEX',250:'FRA',380:'ITA',724:'ESP',643:'RUS',
+  356:'IND',76:'BRA',32:'ARG',682:'SAU',784:'UAE',634:'QAT',414:'KWT',
+  48:'BHR',512:'OMN',792:'TUR',376:'ISR',528:'NLD',56:'BEL',756:'CHE',
+  40:'AUT',752:'SWE',578:'NOR',208:'DNK',246:'FIN',616:'POL',203:'CZE',
+  703:'SVK',348:'HUN',642:'ROU',100:'BGR',300:'GRC',620:'PRT',372:'IRL',
+  818:'EGY',710:'ZAF',404:'KEN',566:'NGA',862:'VEN',170:'COL',604:'PER',
+  218:'ECU',68:'BOL',858:'URY',591:'PAN',188:'CRI',96:'BRN',
+  804:'UKR',112:'BLR',36:'AUS',554:'NZL',
+};
+
+function getColor(alpha3) {
+  const d = countryData[alpha3];
+  if (!d) return '#e5e7eb';
+  if (d.pct > 30) return '#ff2200';
+  if (d.pct > 10) return '#ff5500';
+  if (d.pct > 5)  return '#ff7a3d';
+  if (d.pct > 1)  return d.color;
+  return d.color;
+}
+
+function drawMap(svgId, tooltipId, nameId, contId, pcsId, pctId, barId, isModal) {
+  const svgEl = document.getElementById(svgId);
+  if (!svgEl) return;
+  const W = svgEl.parentElement.clientWidth || 800;
+  const H = isModal ? 500 : 340;
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgEl.style.height = H + 'px';
+
+  const projection = d3.geoNaturalEarth1().scale(W / 6.0).translate([W / 2, H / 2 + 16]);
+  const path = d3.geoPath().projection(projection);
+  const svg = d3.select('#' + svgId);
+  svg.selectAll('*').remove();
+
+  svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#f8f9fc');
+  const graticule = d3.geoGraticule().step([20, 20]);
+  svg.append('path').datum(graticule()).attr('d', path)
+    .attr('fill', 'none').attr('stroke', 'rgba(0,0,0,0.04)').attr('stroke-width', 0.5);
+
+  const tooltip = document.getElementById(tooltipId);
+
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    .then(r => r.json())
+    .then(world => {
+      const countries = topojson.feature(world, world.objects.countries);
+
+      svg.selectAll('.country')
+        .data(countries.features)
+        .enter().append('path')
+        .attr('d', path)
+        .attr('fill', d => getColor(iso[+d.id]))
+        .attr('stroke', '#ffffff')
+        .attr('stroke-width', 0.6)
+        .style('cursor', d => countryData[iso[+d.id]] ? 'pointer' : 'default')
+        .on('mousemove', function(event, d) {
+          const alpha3 = iso[+d.id];
+          const cd = countryData[alpha3];
+          if (!cd) { tooltip.style.opacity = '0'; return; }
+          const pcs = Math.round(cd.pct / 100 * 81449);
+          document.getElementById(nameId).textContent = cd.name;
+          document.getElementById(contId).textContent = '수출 출고 국가';
+          document.getElementById(pcsId).style.color = cd.color;
+          document.getElementById(pcsId).textContent = pcs.toLocaleString() + ' PCS';
+          document.getElementById(pctId).textContent = '전체 수출의 ' + cd.pct.toFixed(1) + '%';
+          document.getElementById(barId).style.background = cd.color;
+          document.getElementById(barId).style.width = Math.min(cd.pct * 2, 100) + '%';
+          tooltip.style.opacity = '1';
+          const rect = svgEl.getBoundingClientRect();
+          let tx = event.clientX - rect.left + 14;
+          let ty = event.clientY - rect.top - 14;
+          if (tx + 220 > rect.width) tx -= 230;
+          if (ty < 0) ty = 10;
+          tooltip.style.left = tx + 'px';
+          tooltip.style.top  = ty + 'px';
+        })
+        .on('mouseleave', () => { tooltip.style.opacity = '0'; });
+
+      if (isModal) {
+        Object.keys(countryData).forEach(alpha3 => {
+          const cd = countryData[alpha3];
+          const feature = countries.features.find(f => iso[+f.id] === alpha3);
+          if (!feature) return;
+          const c = path.centroid(feature);
+          if (!c || isNaN(c[0]) || c[0] < 0 || c[1] < 0 || c[0] > W || c[1] > H) return;
+
+          const labelText = cd.pct >= 1 ? `${cd.name} ${cd.pct.toFixed(1)}%` : cd.name;
+          const pillW = labelText.length * 7.5 + 14;
+
+          svg.append('rect')
+            .attr('x', c[0] - pillW/2).attr('y', c[1] - 10)
+            .attr('width', pillW).attr('height', 18)
+            .attr('rx', 9).attr('fill', 'rgba(255,255,255,0.88)');
+
+          svg.append('text')
+            .attr('x', c[0]).attr('y', c[1] + 1)
+            .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+            .attr('fill', cd.pct >= 5 ? '#111827' : cd.color)
+            .attr('font-size', cd.pct >= 10 ? '11px' : '10px')
+            .attr('font-weight', cd.pct >= 5 ? '700' : '500')
+            .attr('font-family', "'Pretendard', sans-serif")
+            .attr('pointer-events', 'none')
+            .text(labelText);
+        });
+      } else {
+        ['CHN','USA','DEU','HKG','THA'].forEach(alpha3 => {
+          const cd = countryData[alpha3];
+          const feature = countries.features.find(f => iso[+f.id] === alpha3);
+          if (!feature) return;
+          const c = path.centroid(feature);
+          if (!c || isNaN(c[0])) return;
+          svg.append('rect')
+            .attr('x', c[0] - 22).attr('y', c[1] - 9)
+            .attr('width', 44).attr('height', 17)
+            .attr('rx', 8).attr('fill', 'rgba(255,255,255,0.9)');
+          svg.append('text')
+            .attr('x', c[0]).attr('y', c[1] + 1)
+            .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+            .attr('fill', cd.color).attr('font-size', '10px').attr('font-weight', '700')
+            .attr('font-family', "'Pretendard', sans-serif").attr('pointer-events', 'none')
+            .text(cd.pct.toFixed(1) + '%');
+        });
+      }
+    })
+    .catch(() => {
+      svg.append('text').attr('x', W/2).attr('y', H/2)
+        .attr('text-anchor','middle').attr('fill','#9ca3af').attr('font-size','14px')
+        .text('지도 로딩 실패 — 인터넷 연결을 확인해주세요');
+    });
+}
+
+window.addEventListener('load', () => {
+  drawMap('world-map-svg','map-tooltip','tt-country','tt-cont','tt-pcs','tt-pct','tt-bar', false);
+});
+</script>
+</body>
+</html>
