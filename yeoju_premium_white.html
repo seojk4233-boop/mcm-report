@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>여주성주센터 관리지표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+:root{
+  --bg:#f2f6fb;--card:#fff;--ink:#0d1f2d;--sub:#4a6278;--muted:#7a90a3;
+  --line:#dce8f0;--blue:#2563eb;--blue-lt:#eff4ff;--green:#059669;
+  --green-lt:#ecfdf5;--red:#e11d48;--red-lt:#fff1f2;--amber:#d97706;
+  --amber-lt:#fffbeb;--purple:#7c3aed;--teal:#0d9488;
+  --shadow-sm:0 3px 10px rgba(13,31,45,.07);--shadow:0 10px 28px rgba(13,31,45,.10);
+  --shadow-deep:0 18px 45px rgba(13,31,45,.13), inset 0 1px 0 rgba(255,255,255,.75);
+  --r:14px;--font-num:'Figtree','Noto Sans KR',sans-serif;
+  --font-body:'Noto Sans KR','Figtree',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.app{max-width:1560px;margin:0 auto;padding:16px 24px 20px}
+.top{display:flex;align-items:center;gap:20px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}
+.brand h1{font-size:28px;font-weight:800;letter-spacing:-.6px}
+.brand p{font-size:15px;color:var(--sub);font-weight:500;margin-top:3px}
+.tabs{flex:1;display:flex;justify-content:center;gap:8px}
+.tab{border:1px solid var(--line);background:var(--card);padding:13px 32px;border-radius:10px;font-family:var(--font-body);font-weight:800;font-size:16px;color:var(--sub);cursor:pointer;transition:all .15s;box-shadow:var(--shadow-sm)}
+.tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.filter-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.filter{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px}
+.filter small{display:block;color:var(--muted);font-size:13px;font-weight:700;margin-bottom:3px}
+.filter select{border:0;outline:0;font-family:var(--font-body);font-weight:800;font-size:16px;color:var(--ink);background:transparent;cursor:pointer}
+.note{font-size:12px;color:var(--muted);font-weight:500}
+.section{display:none}.section.active{display:block}
+.sec-title{font-size:20px;font-weight:800;color:var(--blue);margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);border:1px solid rgba(190,210,230,.9);border-radius:18px;padding:21px 23px 17px;text-align:left;min-width:0;box-shadow:var(--shadow-deep);position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.kpi .label{font-size:15px;font-weight:700;color:var(--sub);margin-bottom:8px}
+.kpi .value{font-family:var(--font-num);font-size:36px;font-weight:900;letter-spacing:-.8px;color:var(--ink);line-height:1;display:flex;align-items:baseline;justify-content:flex-start;text-align:left;white-space:nowrap}
+.kpi::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 12% 0%,rgba(37,99,235,.09),transparent 36%);pointer-events:none}
+.kpi:hover,.panel:hover,.risk-kpi:hover,.risk-chart-panel:hover{transform:translateY(-2px);box-shadow:0 18px 46px rgba(13,31,45,.14),inset 0 1px 0 rgba(255,255,255,.85);border-color:#c4d9f3}
+.panel,.risk-kpi,.risk-chart-panel,.modal-stat,.mini-card{background:linear-gradient(180deg,#ffffff 0%,#f9fcff 100%)!important;border:1px solid rgba(190,210,230,.92)!important;box-shadow:var(--shadow-deep)!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.unit{font-size:16px;font-weight:600;font-family:var(--font-body);margin-left:2px}
+.compare{display:flex;gap:16px;border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.compare div{font-size:13px;color:var(--sub);font-weight:600;line-height:1.65}
+.up{color:var(--green)!important}.down{color:var(--red)!important}.warn{color:var(--amber)!important}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:6px 11px;font-size:14px;font-weight:700;background:var(--blue-lt);color:var(--blue)}
+.pill.up{background:var(--green-lt);color:var(--green)}.pill.down{background:var(--red-lt);color:var(--red)}.pill.warn{background:var(--amber-lt);color:var(--amber)}
+.ins3{display:grid;grid-template-columns:repeat(3,1fr);margin-bottom:16px;background:#111e30;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.ins3-item{padding:20px 24px;border-right:1px solid rgba(255,255,255,.12)}
+.ins3-item:last-child{border-right:none}
+.ins3-tag{display:inline-block;border-radius:7px;padding:4px 12px;font-size:12px;font-weight:800;background:#04301a;color:#5edf9a;margin-bottom:10px}
+.ins3-item p{font-size:15px;font-weight:500;line-height:1.7;color:#b8d4f0}
+.ins3-item p b{color:#fff}
+/* ─── 4개 차트 카드 그리드 ─── */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.panel{border-radius:18px;padding:17px}
+.panel-title{display:flex;align-items:center;justify-content:space-between;font-size:16px;font-weight:800;color:var(--ink);margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.panel-title .badge{font-size:12px;font-weight:700;color:var(--sub);background:var(--bg);border-radius:7px;padding:4px 9px}
+/* 상세보기 버튼 */
+.detail-btn{border:1px solid #b0caf5;background:var(--blue-lt);color:var(--blue);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:800;cursor:pointer;transition:all .15s;white-space:nowrap}
+.detail-btn:hover{background:var(--blue);color:#fff}
+/* 차트 wrap */
+.chart-wrap{position:relative;width:100%}
+.chart-wrap-donut{position:relative;width:100%;display:flex;justify-content:center}
+/* 차트 아래 요약 줄 */
+.chart-summary{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:11px;font-weight:700;color:var(--blue);line-height:1.5}
+/* 범례 */
+.legend-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--sub)}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+/* 국가 스파크라인 테이블 */
+.spark-table{width:100%;border-collapse:collapse}
+.spark-table td{padding:5px 4px;font-size:12px;font-weight:700;vertical-align:middle;border-bottom:1px solid #eef3f8}
+.spark-table tr:last-child td{border-bottom:0}
+.spark-table .country-name{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.spark-table .flag-img{width:18px;height:13px;object-fit:cover;border-radius:2px;flex-shrink:0}
+.spark-mini{display:inline-block;vertical-align:middle}
+/* 바 인라인 */
+.inline-bar{display:flex;align-items:center;gap:6px}
+.ibar-track{flex:1;height:6px;background:#eaf0f6;border-radius:10px;overflow:hidden;min-width:40px}
+.ibar-fill{height:100%;border-radius:10px}
+/* 수출 대륙별 가로바 */
+.hbar-item{margin:7px 0}
+.hbar-head{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:4px}
+.hbar-track{height:10px;background:#eaf0f6;border-radius:10px;overflow:hidden;position:relative}
+.hbar-fill{height:100%;border-radius:10px;transition:width .4s;position:relative}
+.hbar-prev{position:absolute;top:0;height:100%;border-radius:10px;opacity:.35}
+.hbar-mini{font-size:11px;color:var(--muted);margin-top:3px;font-weight:600}
+/* ─── 지도 ─── */
+.map-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px 18px 14px;box-shadow:0 10px 28px rgba(13,31,45,.07);margin-bottom:8px}
+.map-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:15px;font-weight:800}
+.map-detail-btn{border:1px solid #b0caf5;background:var(--blue-lt);color:var(--blue);border-radius:8px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer}
+#map1,#map2,#mapModal,.modal-map,.map-wrap,.modal-map-box{background:radial-gradient(circle at 16% 34%,rgba(96,165,250,.18),transparent 20%),radial-gradient(circle at 74% 40%,rgba(96,165,250,.18),transparent 22%),linear-gradient(180deg,#eaf5ff 0%,#f8fbff 100%);border-radius:18px;overflow:hidden;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
+#map1 svg{width:100%!important;height:100%!important;display:block!important;touch-action:none;cursor:grab}
+#map1 svg:active,#mapModal svg:active{cursor:grabbing}
+#mapModal svg{touch-action:none;cursor:grab}
+#mapModal{width:100%;height:540px;min-height:540px;position:relative}
+#map1{position:relative}
+.map-tooltip{position:absolute;z-index:80;display:none;min-width:185px;background:rgba(255,255,255,.97);border:1px solid #cce0f5;border-radius:12px;box-shadow:0 10px 30px rgba(13,31,45,.20);padding:11px 13px;pointer-events:none;font-family:var(--font-body)}
+.map-zoom-controls{position:absolute;right:16px;bottom:16px;z-index:120;display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+.map-zoom-row{display:flex;flex-direction:column;gap:7px}
+.map-zoom-btn{width:38px;height:38px;border:1px solid #b0caf5;background:rgba(255,255,255,.98);color:#1d4ed8;border-radius:10px;font-size:22px;font-weight:900;line-height:1;cursor:pointer;box-shadow:0 6px 18px rgba(13,31,45,.14)}
+.map-center-btn{width:auto;height:36px;padding:0 12px;font-size:13px;font-family:var(--font-body);font-weight:900;white-space:nowrap}
+.map-mini-btn{width:auto;min-width:70px;height:36px;padding:0 10px;font-size:12px;font-family:var(--font-body);font-weight:900;letter-spacing:.2px;white-space:nowrap}
+.map-zoom-btn.active{background:#2563eb;color:#fff;border-color:#2563eb}
+.simple-map .pcs-line,.simple-map .pct-line{display:none!important}
+.map-zoom-btn:hover{background:#eff6ff}.map-zoom-btn:active{transform:translateY(1px)}
+.map-tooltip .t-title{font-size:13px;font-weight:800;margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.map-tooltip .t-main{font-family:var(--font-num);font-size:20px;font-weight:800;color:var(--blue)}
+.map-tooltip .t-sub{font-size:11px;color:var(--sub);margin-top:3px;line-height:1.5;font-weight:600}
+.land{fill:#dbeaf6;stroke:#ffffff;stroke-width:.55;stroke-linejoin:round;stroke-linecap:round;filter:drop-shadow(0 1px 1px rgba(80,130,180,.18))}
+.map-label,#map1 text,#mapModal text{font-family:var(--font-body);font-weight:800;stroke:none!important;paint-order:normal!important}
+/* ─── 공통 모달 ─── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(8,20,38,.65);z-index:9999;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal-box{width:97vw;max-height:calc(100vh - 32px);overflow:auto;background:#fff;border-radius:20px;box-shadow:0 30px 90px rgba(0,0,0,.28);padding:18px 20px;border:1px solid var(--line)}
+.modal-box.sm{max-width:860px;width:auto}
+.modal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-top h2{font-size:22px;font-weight:800}
+.modal-close{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:24px;cursor:pointer;color:var(--sub)}
+/* 차트 상세 모달 내부 */
+.detail-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.dkpi{background:linear-gradient(180deg,#fff,#f6faff);border:1px solid rgba(190,210,230,.9);border-radius:12px;padding:13px 15px;box-shadow:var(--shadow-sm)}
+.dkpi small{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.dkpi b{font-family:var(--font-num);font-size:22px;font-weight:900;color:var(--ink)}
+.dkpi .dsub{font-size:11px;font-weight:700;margin-top:3px}
+.detail-charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.detail-chart-panel{background:linear-gradient(180deg,#fff,#f9fcff);border:1px solid rgba(190,210,230,.92);border-radius:14px;padding:14px;box-shadow:var(--shadow-sm)}
+.detail-chart-panel .ptitle{font-size:14px;font-weight:800;margin-bottom:10px;color:var(--ink)}
+.detail-table{width:100%;border-collapse:collapse;margin-top:6px}
+.detail-table th{font-size:11px;font-weight:800;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.detail-table td{font-size:13px;font-weight:700;padding:8px 8px;border-bottom:1px solid #eef3f8;vertical-align:middle}
+.detail-table tr:last-child td{border-bottom:0}
+.detail-table td.num{text-align:right;font-family:var(--font-num);font-weight:800;font-variant-numeric:tabular-nums}
+.ch-wrap{height:200px;position:relative}
+.ch-wrap-lg{height:240px;position:relative}
+/* 재고 탭 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.dark-strip{background:#111e30;color:#cee3ff;border-radius:var(--r);padding:20px 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:16px;text-align:left}
+.dark-strip>div{display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.dark-strip p{font-size:15px;font-weight:500;line-height:1.65;color:#b8d4f0}
+.dark-strip p b{color:#fff}
+.tag{display:inline-block;border-radius:7px;padding:5px 13px;font-size:13px;font-weight:800;margin-bottom:8px}
+.tag.green{background:#04301a;color:#5edf9a}.tag.purple{background:#2a1a60;color:#b8a4fd}.tag.amber{background:#42260a;color:#f5c05a}.tag.red{background:#3a0a14;color:#fb9ab2}.tag.blue{background:#0a1e4a;color:#93c5fd}
+.bar-item{margin:10px 0}
+.bar-head{display:flex;justify-content:space-between;font-size:15px;font-weight:700}
+.track{height:6px;background:#eaf0f6;border-radius:10px;margin-top:6px;overflow:hidden}
+.fill{height:100%;border-radius:10px;background:var(--blue);transition:width .4s}
+.mini{font-size:13px;color:var(--muted);margin-top:4px;font-weight:600}
+.table{width:100%;border-collapse:collapse}
+.table th{font-size:12px;font-weight:800;color:var(--muted);text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);line-height:1.2}
+.table td{padding:9px 6px;border-bottom:1px solid #eef3f8;font-size:14px;font-weight:700;color:var(--ink);line-height:1.25}
+.table td.numtd{text-align:center!important;font-family:var(--font-num);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rank{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border:1px solid var(--line);border-radius:5px;background:var(--bg);font-size:11px;font-weight:800;color:var(--sub)}
+.flag-img{width:20px;height:14px;object-fit:cover;border-radius:2px;margin-right:6px;vertical-align:-2px}
+.pareto-bar-row{display:flex;height:22px;border-radius:8px;overflow:hidden;margin:10px 0 8px}
+.pareto-bar-row div{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.pareto-legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.pareto-legend span{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--sub)}
+.pareto-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
+.sku-insight{background:linear-gradient(135deg,#fffbeb,#fef9ec);border:1px solid #fde68a;border-radius:10px;padding:11px 13px;margin-top:10px;font-size:13px;color:#78350f;font-weight:600;line-height:1.65}
+.inv-tip{background:#f0f6ff;border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:9px 12px;font-size:13px;color:var(--sub);font-weight:600;line-height:1.6;margin-top:10px}
+.inv-tip b{color:var(--ink)}
+/* 리스크 탭 */
+.risk-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.risk-kpi{border-radius:18px;padding:17px 19px}
+.risk-kpi .rlabel{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.risk-kpi .rval{font-family:var(--font-num);font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1}
+.risk-kpi .rdesc{font-size:12px;color:var(--muted);font-weight:600;margin-top:5px}
+.risk-kpi.danger .rval{color:var(--red)}.risk-kpi.warn-k .rval{color:var(--amber)}.risk-kpi.good .rval{color:var(--green)}.risk-kpi.neutral .rval{color:var(--ink)}
+.rbadge{font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px}
+.rbadge.danger{background:rgba(200,24,58,.1);color:var(--red);border:1px solid rgba(200,24,58,.2)}.rbadge.warn{background:rgba(180,83,9,.1);color:var(--amber);border:1px solid rgba(180,83,9,.2)}.rbadge.good{background:rgba(4,120,87,.1);color:var(--green);border:1px solid rgba(4,120,87,.2)}.rbadge.info{background:rgba(29,88,216,.1);color:var(--blue);border:1px solid rgba(29,88,216,.2)}
+.risk-charts{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:16px}
+.risk-chart-panel{border-radius:18px;padding:17px}
+.risk-chart-wrap{position:relative;width:100%;height:220px}
+.country-risk-bar{display:flex;align-items:center;gap:10px;margin:10px 0}
+.crb-name{width:80px;font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px;flex-shrink:0}
+.crb-wrap{flex:1;height:10px;background:#eaf0f6;border-radius:10px;overflow:hidden}
+.crb-fill{height:100%;border-radius:10px}
+.crb-val{width:40px;text-align:right;font-family:var(--font-num);font-size:13px;font-weight:800}
+.risk-bottom{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.ai-insight{background:linear-gradient(135deg,#0f2440,#1a3560);border-radius:var(--r);padding:20px 22px;color:#deeeff;box-shadow:var(--shadow)}
+.ai-insight h3{font-size:15px;font-weight:800;color:#7bbdff;margin-bottom:14px}
+.insight-item{background:rgba(255,255,255,.08);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+.insight-item:last-child{margin-bottom:0}
+.itag{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.itag.red{background:#e11d48;color:#fff}.itag.amber{background:#d97706;color:#fff}.itag.blue{background:#2563eb;color:#fff}.itag.green{background:#059669;color:#fff}
+.itext{font-size:13px;font-weight:600;color:#cce2ff;line-height:1.65}.itext b{color:#fff}
+.risk-criteria{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow-sm)}
+.risk-criteria h3{font-size:15px;font-weight:800;margin-bottom:14px}
+.crit-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.crit-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.crit-badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800;white-space:nowrap;flex-shrink:0}
+.crit-badge.red{background:var(--red-lt);color:var(--red)}.crit-badge.amber{background:var(--amber-lt);color:var(--amber)}.crit-badge.blue{background:var(--blue-lt);color:var(--blue)}
+.crit-text{font-size:13px;color:var(--sub);font-weight:600;line-height:1.6}.crit-text b{color:var(--ink)}
+.check-points{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow-sm)}
+.check-points h3{font-size:15px;font-weight:800;margin-bottom:12px}
+.check-points p{font-size:14px;color:var(--sub);font-weight:500;line-height:1.75}
+.check-list{margin-top:12px}
+.check-list li{font-size:13px;color:var(--sub);font-weight:600;line-height:1.7;list-style:none;border-left:3px solid var(--blue);padding:6px 10px;margin-bottom:8px;background:var(--blue-lt);border-radius:0 6px 6px 0}
+.modal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.modal-stat{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.modal-stat small{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.modal-stat b{font-family:var(--font-num);font-size:20px;font-weight:800}
+.modal-grid{display:grid;grid-template-columns:1.5fr .9fr;gap:14px}
+.modal-bottom{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.summary-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mini-card{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:#fff}
+.mini-card small{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.mini-card b{font-family:var(--font-num);font-size:20px;font-weight:800}
+.country-info-card{border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,#fff,#f4f9ff);padding:18px 22px}
+.country-info-card h3{color:var(--blue);font-size:16px;font-weight:800;margin-bottom:8px}
+.country-info-card ul{padding-left:18px;color:var(--sub);font-size:14px;font-weight:500;line-height:1.8}
+.footer{text-align:right;color:var(--muted);font-size:12px;font-weight:600;margin-top:10px}
+/* 공통 */
+.table{table-layout:fixed}
+.table th,.table td{vertical-align:middle;white-space:nowrap;word-break:keep-all}
+.table th.numtd,.table td.numtd{text-align:center!important;font-variant-numeric:tabular-nums}
+.country-cell{white-space:nowrap!important;word-break:keep-all!important;overflow:visible!important}
+.country-name-inner{display:inline-flex!important;align-items:center!important;gap:6px!important;white-space:nowrap!important;word-break:keep-all!important;flex-wrap:nowrap!important;min-width:max-content!important}
+.country-name-inner .flag-img{flex:0 0 auto!important;margin-right:0!important}
+.pcs-unit{font-family:var(--font-body);font-size:11px;font-weight:800;color:var(--muted);margin-left:3px}
+@media(max-width:1100px){
+  .kpis,.grid4,.risk-kpis{grid-template-columns:1fr 1fr}
+  .grid2,.ins3,.dark-strip,.modal-grid,.modal-bottom,.risk-charts,.risk-bottom,.detail-charts,.detail-kpi-row{grid-template-columns:1fr}
+  .top{flex-wrap:wrap}.tabs{overflow-x:auto;justify-content:flex-start}
+}
+
+/* ═══════════════════════════════════════
+   PREMIUM UPGRADE CSS
+═══════════════════════════════════════ */
+:root{
+  --bg:#f0f4f9;
+  --bg2:#e8eef6;
+  --card:#ffffff;
+  --ink:#0a1929;
+  --sub:#3a5470;
+  --muted:#6b8299;
+  --line:#d4e2ef;
+  --blue:#1d58d8;
+  --blue-lt:#edf3ff;
+  --blue-mid:#3b7bfc;
+  --green:#047857;
+  --green-lt:#ecfdf5;
+  --red:#c8183a;
+  --red-lt:#fff1f4;
+  --amber:#b45309;
+  --amber-lt:#fef9ec;
+  --purple:#6d28d9;
+  --teal:#0f766e;
+  --gold:#b8860b;
+  --gold-lt:#fefce8;
+  --shadow-sm:0 2px 8px rgba(10,25,45,.06);
+  --shadow:0 8px 24px rgba(10,25,45,.10);
+  --shadow-deep:0 4px 6px rgba(10,25,45,.04),0 12px 32px rgba(10,25,45,.09),0 20px 48px rgba(10,25,45,.05),inset 0 1px 0 rgba(255,255,255,.9);
+  --shadow-hover:0 6px 12px rgba(10,25,45,.06),0 20px 48px rgba(29,88,216,.12),0 32px 64px rgba(10,25,45,.08),inset 0 1px 0 rgba(255,255,255,1);
+  --r:16px;
+  --font-num:'Plus Jakarta Sans','DM Mono','Noto Sans KR',sans-serif;
+  --font-body:'Noto Sans KR','Plus Jakarta Sans',sans-serif;
+  --font-mono:'DM Mono','Plus Jakarta Sans',monospace;
+}
+
+/* Body + ambient glow */
+body{
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 900px 600px at 15% 0%,rgba(59,123,252,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 700px 500px at 85% 100%,rgba(29,88,216,.05) 0%,transparent 55%);
+}
+
+/* Header premium */
+.top{
+  background:linear-gradient(180deg,rgba(255,255,255,.98) 0%,rgba(248,252,255,.95) 100%);
+  border-radius:var(--r);
+  border:1px solid var(--line);
+  padding:16px 22px 14px;
+  margin-bottom:18px;
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(8px);
+}
+.brand h1{
+  background:linear-gradient(135deg,#0a1929 0%,#1d58d8 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  font-size:26px;font-weight:900;letter-spacing:-.8px;
+}
+
+/* Tab premium */
+.tabs{
+  background:var(--bg2);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:4px;
+}
+.tab{
+  border:none;background:transparent;
+  font-weight:800;font-size:14px;letter-spacing:-.2px;
+  color:var(--muted);border-radius:9px;padding:10px 26px;
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+}
+.tab.active{
+  background:linear-gradient(135deg,#1d58d8,#3b7bfc);
+  color:#fff;
+  box-shadow:0 4px 14px rgba(29,88,216,.35),0 1px 3px rgba(0,0,0,.1);
+}
+.tab:hover:not(.active){background:rgba(255,255,255,.7);color:var(--sub)}
+
+/* KPI cards premium */
+.kpi{
+  background:linear-gradient(160deg,#ffffff 0%,#f7fbff 100%);
+  border:1px solid rgba(200,218,240,.7);
+  border-radius:20px;
+  padding:22px 22px 18px;
+  box-shadow:var(--shadow-deep);
+  position:relative;overflow:hidden;
+  transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s,border-color .22s;
+}
+.kpi::before{
+  content:"";position:absolute;
+  top:-1px;left:10%;right:10%;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(29,88,216,.4),rgba(59,123,252,.6),rgba(29,88,216,.4),transparent);
+  border-radius:0 0 4px 4px;
+  opacity:0;transition:opacity .3s;
+}
+.kpi::after{
+  content:"";position:absolute;
+  inset:0;pointer-events:none;
+  background:radial-gradient(circle at 10% -10%,rgba(59,123,252,.1) 0%,transparent 40%);
+}
+.kpi:hover{
+  transform:translateY(-4px) scale(1.005);
+  box-shadow:var(--shadow-hover);
+  border-color:rgba(59,123,252,.35);
+}
+.kpi:hover::before{opacity:1}
+.kpi .label{
+  font-size:10px;font-weight:800;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:10px;
+}
+.kpi .value{
+  font-family:var(--font-num);font-size:34px;font-weight:900;
+  letter-spacing:-1.5px;color:var(--ink);
+  line-height:1;white-space:nowrap;
+}
+.kpi .unit{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:0;font-family:var(--font-body)}
+.kpi .compare{border-top:1px solid rgba(212,226,239,.6);margin-top:14px;padding-top:10px;gap:20px}
+.kpi .compare div{font-size:11px;color:var(--muted);font-weight:600;line-height:1.7}
+.kpi .compare div b{display:block;font-family:var(--font-mono);font-size:13px;font-weight:700}
+
+/* Insight banner */
+.ins3{
+  background:linear-gradient(135deg,#0a1929 0%,#0f2540 50%,#0a1929 100%);
+  border-radius:var(--r);
+  border:1px solid rgba(59,123,252,.2);
+  box-shadow:0 8px 32px rgba(10,25,45,.2),inset 0 1px 0 rgba(255,255,255,.06);
+  overflow:hidden;position:relative;
+}
+.ins3::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 50% -20%,rgba(59,123,252,.15),transparent 60%);
+  pointer-events:none;
+}
+
+/* Panel premium */
+.panel{
+  background:linear-gradient(160deg,#ffffff 0%,#f8fbff 100%) !important;
+  border:1px solid rgba(200,218,240,.7) !important;
+  border-radius:20px !important;
+  box-shadow:var(--shadow-deep) !important;
+  transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s,border-color .22s !important;
+  overflow:hidden;position:relative;
+}
+.panel::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 90% 0%,rgba(59,123,252,.05) 0%,transparent 45%);
+}
+.panel:hover{
+  transform:translateY(-3px) !important;
+  box-shadow:var(--shadow-hover) !important;
+  border-color:rgba(59,123,252,.25) !important;
+}
+.panel-title{
+  font-size:14px;font-weight:800;letter-spacing:-.2px;
+  border-bottom:1px solid rgba(212,226,239,.5);
+  padding-bottom:10px;margin-bottom:12px;
+}
+
+/* Detail button */
+.detail-btn{
+  border:1px solid rgba(29,88,216,.25);
+  background:linear-gradient(135deg,#edf3ff,#e0ecff);
+  color:var(--blue);border-radius:8px;padding:5px 12px;
+  font-size:11px;font-weight:800;letter-spacing:.3px;
+  cursor:pointer;transition:all .18s;white-space:nowrap;
+  box-shadow:0 2px 6px rgba(29,88,216,.1);
+}
+.detail-btn:hover{
+  background:linear-gradient(135deg,var(--blue),#3b7bfc);
+  color:#fff;border-color:transparent;
+  box-shadow:0 4px 14px rgba(29,88,216,.35);
+  transform:translateY(-1px);
+}
+
+/* Risk KPI */
+.risk-kpi{
+  background:linear-gradient(160deg,#ffffff 0%,#f8fbff 100%) !important;
+  border:1px solid rgba(200,218,240,.7) !important;
+  border-radius:20px !important;
+  box-shadow:var(--shadow-deep) !important;
+}
+.risk-chart-panel{
+  background:linear-gradient(160deg,#ffffff 0%,#f8fbff 100%) !important;
+  border:1px solid rgba(200,218,240,.7) !important;
+  border-radius:20px !important;
+  box-shadow:var(--shadow-deep) !important;
+}
+
+/* Section title */
+.sec-title{
+  font-size:22px;font-weight:900;letter-spacing:-.5px;
+  background:linear-gradient(135deg,#0a1929 0%,#1d58d8 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+/* Map card */
+.map-card{
+  background:linear-gradient(160deg,#ffffff 0%,#f5f9ff 100%);
+  border:1px solid rgba(200,218,240,.7);
+  border-radius:20px;
+  box-shadow:var(--shadow-deep);
+  overflow:hidden;
+}
+#map1{
+  background:linear-gradient(160deg,#edf4ff 0%,#f2f7ff 100%) !important;
+  border-radius:14px;
+  overflow:hidden;
+}
+.map-inner{
+  background:linear-gradient(160deg,#edf4ff 0%,#f2f7ff 100%);
+  border-radius:14px;overflow:hidden;
+}
+.land{fill:#c8ddf2;stroke:#ffffff;stroke-width:.6}
+
+/* Badge */
+.badge{
+  font-size:11px;font-weight:700;letter-spacing:.3px;
+  color:var(--sub);
+  background:linear-gradient(135deg,#f0f5ff,#e8effa);
+  border:1px solid rgba(200,218,240,.8);
+  border-radius:7px;padding:3px 10px;
+}
+.card-badge{
+  font-size:11px;font-weight:700;letter-spacing:.3px;
+  color:var(--blue);
+  background:linear-gradient(135deg,#edf3ff,#e0ecff);
+  border:1px solid rgba(29,88,216,.2);
+  border-radius:7px;padding:3px 10px;
+}
+
+/* Chart summary bar */
+.chart-summary{
+  margin-top:10px;padding-top:8px;
+  border-top:1px solid rgba(212,226,239,.5);
+  font-size:11px;font-weight:700;
+  color:var(--blue);letter-spacing:.2px;
+}
+
+/* Modal */
+.modal-box{
+  background:linear-gradient(180deg,#ffffff 0%,#f5f9ff 100%);
+  border:1px solid rgba(200,218,240,.8);
+  border-radius:22px;
+  box-shadow:0 40px 100px rgba(10,25,45,.18),0 8px 32px rgba(29,88,216,.1);
+}
+.modal-close{
+  background:linear-gradient(135deg,#f5f8ff,#edf3ff);
+  border:1px solid rgba(200,218,240,.8);
+  border-radius:10px;transition:all .15s;
+}
+.modal-close:hover{background:var(--red-lt);border-color:rgba(200,24,58,.3);color:var(--red)}
+.dkpi{
+  background:linear-gradient(160deg,#ffffff,#f7fbff);
+  border:1px solid rgba(200,218,240,.7);
+  border-radius:12px;
+  box-shadow:var(--shadow-sm);
+}
+.detail-chart-panel{
+  background:linear-gradient(160deg,#ffffff,#f7fbff);
+  border:1px solid rgba(200,218,240,.7);
+  border-radius:14px;
+  box-shadow:var(--shadow-sm);
+}
+.modal-table-wrap{
+  background:linear-gradient(160deg,#ffffff,#f9fbff);
+  border:1px solid rgba(200,218,240,.6);
+  border-radius:14px;overflow:hidden;
+}
+.modal-table th{
+  background:linear-gradient(180deg,#f5f9ff,#edf3ff);
+  font-size:10px;font-weight:800;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted);
+  padding:10px 14px;border-bottom:1px solid var(--line);
+}
+.modal-table td{
+  padding:9px 14px;border-bottom:1px solid rgba(212,226,239,.4);
+  font-size:13px;vertical-align:middle;transition:background .1s;
+}
+.modal-table tr:hover td{background:rgba(237,243,255,.5)}
+.modal-table td.num{text-align:right;font-family:var(--font-mono);font-weight:700}
+.rank-chip{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:6px;
+  background:linear-gradient(135deg,#f0f5ff,#e5edff);
+  border:1px solid rgba(200,218,240,.8);
+  font-size:10px;font-weight:800;color:var(--blue);
+}
+
+/* HBar premium */
+.hbar-track{height:7px;background:rgba(200,218,240,.35);border-radius:10px;overflow:hidden;position:relative}
+.hbar-fill{height:100%;border-radius:10px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* Animations */
+@keyframes fadeSlideIn{
+  from{opacity:0;transform:translateY(14px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.section.active > *{animation:fadeSlideIn .4s cubic-bezier(.4,0,.2,1) both}
+.section.active > *:nth-child(1){animation-delay:.02s}
+.section.active > *:nth-child(2){animation-delay:.07s}
+.section.active > *:nth-child(3){animation-delay:.12s}
+.section.active > *:nth-child(4){animation-delay:.17s}
+.section.active > *:nth-child(5){animation-delay:.22s}
+
+/* Live pulse */
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2.2s infinite;margin-right:5px;vertical-align:middle}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(4,120,87,.45)}55%{box-shadow:0 0 0 7px rgba(4,120,87,0)}}
+
+/* Filter */
+.filter{
+  background:linear-gradient(135deg,#ffffff,#f7fbff);
+  border:1px solid rgba(200,218,240,.8);
+  border-radius:11px;padding:9px 14px;
+  box-shadow:var(--shadow-sm);
+}
+
+/* Spark table */
+.spark-tbl{width:100%;border-collapse:collapse}
+.spark-tbl th{
+  font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);padding:0 6px 8px;text-align:left;
+  border-bottom:1px solid var(--line);
+}
+.spark-tbl td{padding:7px 6px;border-bottom:1px solid rgba(212,226,239,.4);font-size:12px;vertical-align:middle}
+.spark-tbl tr:last-child td{border-bottom:0}
+.spark-tbl tr:hover td{background:rgba(237,243,255,.4)}
+
+/* Map tooltip */
+.map-tooltip{
+  background:rgba(255,255,255,.97);
+  border:1px solid rgba(200,218,240,.9);
+  border-radius:12px;
+  box-shadow:0 12px 40px rgba(10,25,45,.15);
+  backdrop-filter:blur(8px);
+}
+
+/* Zoom buttons */
+.mz-btn,.map-zoom-btn{
+  background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(240,247,255,.95));
+  border:1px solid rgba(200,218,240,.8);
+  color:var(--blue);border-radius:9px;
+  box-shadow:0 3px 10px rgba(10,25,45,.1);
+  transition:all .15s;
+}
+.mz-btn:hover,.map-zoom-btn:hover{
+  background:linear-gradient(135deg,#edf3ff,#e0ecff);
+  border-color:rgba(29,88,216,.3);
+  box-shadow:0 4px 14px rgba(29,88,216,.2);
+  transform:translateY(-1px);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(100,140,180,.25);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(29,88,216,.3)}
+
+/* Risk bottom */
+.ai-insight{
+  background:linear-gradient(160deg,#0a1929 0%,#0f2540 100%) !important;
+  border:1px solid rgba(59,123,252,.2) !important;
+  border-radius:20px !important;
+  box-shadow:0 8px 32px rgba(10,25,45,.2) !important;
+  position:relative;overflow:hidden;
+}
+.ai-insight::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 80% -10%,rgba(59,123,252,.2),transparent 50%);
+  pointer-events:none;
+}
+.ai-insight h3{color:#7bb8ff;font-size:12px;letter-spacing:2px;text-transform:uppercase}
+.insight-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:10px}
+
+/* Check list */
+.check-list li{
+  background:linear-gradient(135deg,#edf3ff,#e5edff);
+  border-left:3px solid var(--blue);
+  border-radius:0 8px 8px 0;
+  padding:7px 12px;margin-bottom:7px;
+  font-size:12px;font-weight:600;color:var(--sub);
+  list-style:none;line-height:1.65;
+  transition:background .15s;
+}
+.check-list li:hover{background:linear-gradient(135deg,#deeaff,#d4e4ff)}
+
+/* Inv tip */
+.inv-tip{
+  background:linear-gradient(135deg,#f0f6ff,#e8f0fc);
+  border-left:3px solid var(--blue);
+  border-radius:0 9px 9px 0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+}
+
+/* SKU insight */
+.sku-insight{
+  background:linear-gradient(135deg,#fffbeb,#fef7d8);
+  border:1px solid rgba(184,99,9,.15);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+}
+
+/* Footer */
+.footer{
+  text-align:right;color:var(--muted);font-size:11px;font-weight:600;
+  margin-top:12px;letter-spacing:.3px;
+  display:flex;align-items:center;justify-content:flex-end;gap:8px;
+}
+
+
+.risk-kpi{position:relative;overflow:hidden}
+.risk-kpi.danger::before,.risk-kpi.warn-k::before,.risk-kpi.good::before,.risk-kpi.neutral::before{
+  content:"";position:absolute;top:0;left:0;width:3px;height:100%;
+}
+.risk-kpi.danger::before{background:linear-gradient(180deg,var(--red),rgba(200,24,58,.3))}
+.risk-kpi.warn-k::before{background:linear-gradient(180deg,var(--amber),rgba(180,83,9,.3))}
+.risk-kpi.good::before{background:linear-gradient(180deg,var(--green),rgba(4,120,87,.3))}
+.risk-kpi.neutral::before{background:linear-gradient(180deg,var(--blue),rgba(29,88,216,.3))}
+
+
+.sec-title-wrap{display:flex;align-items:baseline;gap:10px;margin-bottom:18px}
+.sec-sub-badge{
+  font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);padding:3px 10px;
+  border:1px solid var(--line);border-radius:20px;
+  background:linear-gradient(135deg,#f5f9ff,#edf3ff);
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand">
+    <h1>여주성주센터 관리지표</h1>
+    <p style="font-size:12px;color:var(--muted);font-weight:500;margin-top:3px;letter-spacing:.3px">Operation Control Tower&nbsp;·&nbsp;B2B/B2C 출고 및 재고 운영 현황</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:5px"><span class="live-dot"></span><span style="font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px">LIVE · 2026.05.13</span></div>
+</div>
+  <nav class="tabs">
+    <button class="tab active" onclick="showTab('monthly',this)">월별 요약</button>
+    <button class="tab" onclick="showTab('inventory',this)">재고 현황</button>
+    <button class="tab" onclick="showTab('risk',this)">운영 리스크</button>
+  </nav>
+  <div class="filter-wrap">
+    <div class="filter">
+      <small>기준월 선택</small>
+      <select id="monthSelect" onchange="changeMonth(this.value)">
+        <option value="4" selected>2026년 4월</option>
+        <option value="3">2026년 3월</option>
+        <option value="2">2026년 2월</option>
+        <option value="1">2026년 1월</option>
+      </select>
+    </div>
+    <div class="note">* 전월 대비 / 전년 동월 대비</div>
+  </div>
+</header>
+
+<!-- 월별 요약 -->
+<section id="monthly" class="section active">
+  <h2 class="sec-title" id="monthly-title">월별 요약 — 2026년 4월</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="label" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">총 출고 PCS</div><div class="value" id="m-total">90,125<span class="unit">PCS</span></div><div class="compare"><div>전월 대비<br><span class="up" id="m-total-mom">▲10.7%</span><br><small id="m-total-prev">(81,449)</small></div><div>전년 동월<br><span class="up" id="m-total-yoy">▲79.9%</span><br><small id="m-total-py">(50,079)</small></div></div></div>
+    <div class="kpi"><div class="label">수출 PCS</div><div class="value" id="m-export">84,327<span class="unit">PCS</span></div><div class="compare"><div>전월 대비<br><span class="up" id="m-exp-mom">▲3.5%</span><br><small id="m-exp-prev">(81,449)</small></div><div>전년 동월<br><span class="up" id="m-exp-yoy">▲63.4%</span><br><small id="m-exp-py">(51,682)</small></div></div></div>
+    <div class="kpi"><div class="label">국내 PCS</div><div class="value" id="m-domestic">5,798<span class="unit">PCS</span></div><div class="compare"><div>전월 대비<br><span class="up" id="m-dom-mom">▲46.2%</span><br><small id="m-dom-prev">(3,964)</small></div><div>전년 동월<br><span class="up" id="m-dom-yoy">▲639.6%</span><br><small id="m-dom-py">(784)</small></div></div></div>
+    <div class="kpi"><div class="label">SKU당 PCS</div><div class="value" id="m-skupp">31.2</div><div class="compare"><div>전월 대비<br><span class="down" id="m-sku-mom">▼6.9%</span><br><small id="m-sku-prev">(33.5)</small></div><div>전년 동월<br><span class="down" id="m-sku-yoy">▼31.5%</span><br><small id="m-sku-py">(45.5)</small></div></div></div>
+    <div class="kpi"><div class="label">출고 SKU</div><div class="value" id="m-sku">3,128<span class="unit">종</span></div><div class="compare"><div>전월 대비<br><span class="up" id="m-skuc-mom">▲5.1%</span><br><small id="m-skuc-prev">(2,977)</small></div><div>전년 동월<br><span class="up" id="m-skuc-yoy">▲53.7%</span><br><small id="m-skuc-py">(2,036)</small></div></div></div>
+  </div>
+
+  <div class="ins3">
+    <div class="ins3-item"><div class="ins3-tag" style="background:rgba(4,120,87,.12);color:#047857;border:1px solid rgba(4,120,87,.2)">▲ 물동량</div><p id="ins1">4월 총 출고량은 <b>90,125 PCS</b>이며 전월 대비 <b>▲10.7%</b> 증가했습니다. 전년 동월 대비 <b>▲79.9%</b>로 크게 성장했습니다.</p></div>
+    <div class="ins3-item"><div class="ins3-tag" style="background:rgba(109,40,217,.1);color:#6d28d9;border:1px solid rgba(109,40,217,.2)">◈ 채널</div><p id="ins2">수출 비중 <b>93.6%</b>, 국내 <b>6.4%</b>입니다. 면세점 <b>▲7.3%</b> 회복, 백화점 <b>▼6.3%</b> 조정 중입니다.</p></div>
+    <div class="ins3-item"><div class="ins3-tag" style="background:rgba(180,83,9,.1);color:#b45309;border:1px solid rgba(180,83,9,.2)">⚑ 집중도</div><p id="ins3">중국+홍콩 합산 <b>66.9%</b>. 수출 다변화와 피킹 평준화 검토가 필요합니다.</p></div>
+  </div>
+
+  <!-- ★ 4개 차트 카드 -->
+  <div class="grid4" id="chart4grid">
+
+    <!-- 카드 1: 국내 채널별 도넛 차트 -->
+    <div class="panel" id="card-domestic">
+      <div class="panel-title">
+        국내 채널별 출고
+        <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="badge" id="domestic-badge">4월 · 5,798 PCS</span>
+          <button class="detail-btn" onclick="openDetailModal('domestic')">상세보기 ↗</button>
+        </span>
+      </div>
+      <div class="chart-wrap-donut" style="height:160px">
+        <canvas id="domesticDonut"></canvas>
+      </div>
+      <div class="legend-row" id="domestic-legend"></div>
+      <div class="chart-summary" id="domestic-summary">★ 면세점 비중이 가장 높으며 전월 대비 증가했습니다</div>
+    </div>
+
+    <!-- 카드 2: 수출 대륙별 가로 비교 막대 -->
+    <div class="panel" id="card-continent">
+      <div class="panel-title">
+        수출 대륙별 출고
+        <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="badge" id="export-badge">4월 · 84,327 PCS</span>
+          <button class="detail-btn" onclick="openDetailModal('continent')">상세보기 ↗</button>
+        </span>
+      </div>
+      <div id="continent-bars"></div>
+      <div class="chart-summary" id="continent-summary">★ 아시아 비중이 가장 높으며 전월 대비 증가했습니다</div>
+    </div>
+
+    <!-- 카드 3: 수출 상위 5개국 수평 바 차트 -->
+    <div class="panel" id="card-top5">
+      <div class="panel-title">
+        수출 상위 5개국
+        <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="badge" id="top5-badge">4월 기준</span>
+          <button class="detail-btn" onclick="openDetailModal('top5')">상세보기 ↗</button>
+        </span>
+      </div>
+      <div class="ch-wrap" style="height:170px">
+        <canvas id="top5Chart"></canvas>
+      </div>
+      <div class="chart-summary" id="top5-summary">★ 중국 비중 전월 대비 ▼2.1%p 소폭 감소했습니다</div>
+    </div>
+
+    <!-- 카드 4: 주요 국가 더보기 — 스파크라인 미니 트렌드 -->
+    <div class="panel" id="card-more">
+      <div class="panel-title">
+        주요 국가 더보기
+        <button class="detail-btn" onclick="openDetailModal('more')">상세보기 ↗</button>
+      </div>
+      <div id="more-spark-table"></div>
+      <div class="chart-summary" id="more-summary">★ 베트남 ▲18.7%, 일본 ▲16.8% 성장세 주목</div>
+    </div>
+
+  </div><!-- /grid4 -->
+
+  <!-- 지도 -->
+  <div class="map-card">
+    <div class="map-head"><span>수출 국가별 출고 현황</span><button class="map-detail-btn" onclick="openMapModal()">상세보기 ↗</button></div>
+    <div id="map1" style="width:100%;height:500px"><div class="map-tooltip"></div></div>
+  </div>
+</section>
+
+<!-- 재고 현황 -->
+<section id="inventory" class="section"></section>
+
+<!-- 운영 리스크 -->
+<section id="risk" class="section">
+  <h2 class="sec-title">운영 리스크 — 2026년 4월</h2>
+  <div class="risk-kpis">
+    <div class="risk-kpi danger"><div class="rlabel">수출 집중도 <span class="rbadge danger">위험</span></div><div class="rval">66.9<span style="font-size:18px">%</span></div><div class="rdesc">중국+홍콩 합산 비중</div></div>
+    <div class="risk-kpi warn-k"><div class="rlabel">SLG 재고 회전율 <span class="rbadge warn">주의</span></div><div class="rval">2.8<span style="font-size:18px">개월</span></div><div class="rdesc">기준치 1.5개월 초과</div></div>
+    <div class="risk-kpi warn-k"><div class="rlabel">SKU당 PCS <span class="rbadge warn">감소</span></div><div class="rval">31.2</div><div class="rdesc">전월 33.5 ▼6.9%</div></div>
+    <div class="risk-kpi good"><div class="rlabel">출고 회복세 <span class="rbadge good">양호</span></div><div class="rval">3<span style="font-size:18px">개월</span></div><div class="rdesc">연속 전월 대비 성장</div></div>
+    <div class="risk-kpi neutral"><div class="rlabel">수출 국가 수 <span class="rbadge info">확대</span></div><div class="rval">26<span style="font-size:18px">개국</span></div><div class="rdesc">전월 대비 ▲4개국</div></div>
+  </div>
+  <div class="risk-charts">
+    <div class="risk-chart-panel"><div class="panel-title">월별 수출·국내 출고 추이 <span class="badge">1~4월</span></div><div class="risk-chart-wrap"><canvas id="riskTrendChart"></canvas></div></div>
+    <div class="risk-chart-panel"><div class="panel-title">수출 국가 집중도 <span class="badge">4월 기준</span></div>
+      <div style="padding-top:8px">
+        <div class="country-risk-bar"><div class="crb-name"><img class="flag-img" src="https://flagcdn.com/cn.svg" style="width:20px;height:14px;border-radius:2px;margin-right:4px">중국</div><div class="crb-wrap"><div class="crb-fill" style="width:100%;background:linear-gradient(90deg,#e11d48,#fb7185)"></div></div><div class="crb-val" style="color:var(--red)">42.0%</div></div>
+        <div class="country-risk-bar"><div class="crb-name"><img class="flag-img" src="https://flagcdn.com/hk.svg" style="width:20px;height:14px;border-radius:2px;margin-right:4px">홍콩</div><div class="crb-wrap"><div class="crb-fill" style="width:59%;background:linear-gradient(90deg,#f97316,#fdba74)"></div></div><div class="crb-val" style="color:var(--amber)">24.9%</div></div>
+        <div class="country-risk-bar"><div class="crb-name"><img class="flag-img" src="https://flagcdn.com/us.svg" style="width:20px;height:14px;border-radius:2px;margin-right:4px">미국</div><div class="crb-wrap"><div class="crb-fill" style="width:22%;background:linear-gradient(90deg,#2563eb,#60a5fa)"></div></div><div class="crb-val">9.3%</div></div>
+        <div class="country-risk-bar"><div class="crb-name"><img class="flag-img" src="https://flagcdn.com/jp.svg" style="width:20px;height:14px;border-radius:2px;margin-right:4px">일본</div><div class="crb-wrap"><div class="crb-fill" style="width:8.8%;background:linear-gradient(90deg,#2563eb,#60a5fa)"></div></div><div class="crb-val">3.7%</div></div>
+        <div class="country-risk-bar"><div class="crb-name"><img class="flag-img" src="https://flagcdn.com/tw.svg" style="width:20px;height:14px;border-radius:2px;margin-right:4px">대만</div><div class="crb-wrap"><div class="crb-fill" style="width:8.3%;background:linear-gradient(90deg,#2563eb,#60a5fa)"></div></div><div class="crb-val">3.5%</div></div>
+        <div class="country-risk-bar"><div class="crb-name"><img class="flag-img" src="https://flagcdn.com/ae.svg" style="width:20px;height:14px;border-radius:2px;margin-right:4px">UAE</div><div class="crb-wrap"><div class="crb-fill" style="width:5.2%;background:linear-gradient(90deg,#059669,#34d399)"></div></div><div class="crb-val">2.2%</div></div>
+        <div class="country-risk-bar"><div class="crb-name"><img class="flag-img" src="https://flagcdn.com/sg.svg" style="width:20px;height:14px;border-radius:2px;margin-right:4px">싱가포르</div><div class="crb-wrap"><div class="crb-fill" style="width:5.7%;background:linear-gradient(90deg,#059669,#34d399)"></div></div><div class="crb-val">2.4%</div></div>
+        <div style="margin-top:10px;padding:8px 12px;background:var(--red-lt);border-radius:8px;font-size:12px;color:var(--red);font-weight:700">⚠️ 중국+홍콩 합산 66.9% — 특정 국가 이슈 발생 시 월 출고의 2/3가 영향받는 편중 구조</div>
+      </div>
+    </div>
+  </div>
+  <div class="risk-bottom">
+    <div class="ai-insight">
+      <h3>🤖 운영 리스크 인사이트</h3>
+      <div class="insight-item"><span class="itag red">집중</span><div class="itext">수출 집중도는 <b>중국+홍콩 66.9%</b>로, 특정 국가 이슈 발생 시 월 출고의 2/3가 직접 영향받는 편중 구조입니다. 일본(▲16.8%)·베트남(▲18.7%) 등 성장 국가로의 다변화가 시급합니다.</div></div>
+      <div class="insight-item"><span class="itag amber">재고</span><div class="itext">SLG 소형잡화 재고 회전율이 <b>2.8개월</b>로 기준치(1.5개월)를 크게 초과합니다. 현 출고 속도가 유지될 경우 소진까지 약 3개월이 소요되며, 발주 조절 또는 출고 촉진이 필요합니다.</div></div>
+      <div class="insight-item"><span class="itag green">기회</span><div class="itext">4월 출고량 <b>90,125 PCS</b>로 3개월 연속 성장세입니다. 동남아·일본 등 성장 국가가 두드러지며, 해당 채널 전담 MD 배치와 SKU 라인업 확대를 통한 다변화 전략이 권장됩니다.</div></div>
+      <div class="insight-item"><span class="itag blue">운영</span><div class="itext">화~목 출고 집중도가 전체의 약 <b>65~70%</b>에 달합니다. 요일별 피킹 평준화 스케줄 도입으로 오출고·지연 리스크를 줄이고 인력 효율을 높일 수 있습니다.</div></div>
+    </div>
+    <div class="risk-criteria">
+      <h3>리스크 판단 기준</h3>
+      <div class="crit-item"><span class="crit-badge red">집중</span><div class="crit-text"><b>특정 국가 비중 30% 초과</b> 또는 상위 2개국 합산 50% 초과 시 수출 집중 리스크로 분류. 현재 중국 42.0% + 홍콩 24.9% = 66.9%로 위험 구간.</div></div>
+      <div class="crit-item"><span class="crit-badge amber">재고</span><div class="crit-text"><b>재고 회전율 = 현재 재고 ÷ 월 출고량.</b> 1.5개월 초과 시 주의, 3.0개월 초과 시 위험으로 분류. SLG 현재 2.8개월로 주의 구간.</div></div>
+      <div class="crit-item"><span class="crit-badge blue">운영</span><div class="crit-text"><b>요일별 출고 집중도</b> — 특정 3일 이내 출고 비중이 65% 초과 시 피킹·검수 과부하 리스크. 화~목 현재 약 70% 집중.</div></div>
+    </div>
+    <div class="check-points">
+      <h3>우선 점검 포인트</h3>
+      <p>수출 집중도가 높고 SLG 재고 회전율이 기준치를 초과하는 상황입니다. 아래 항목을 우선 점검하세요.</p>
+      <ul class="check-list">
+        <li>중국·홍콩 의존도 — 월별 비중 추이 및 대체 국가 확대 현황 확인</li>
+        <li>SLG 소형잡화 — 기존 발주 계획 재검토 및 출고 촉진 방안 수립</li>
+        <li>요일별 출고 분산 — 화~목 집중 완화를 위한 스케줄 조정</li>
+        <li>하위 70% SKU(2,774종) — 분기별 저회전 SKU 정리 및 LOC 반환</li>
+        <li>일본·베트남 성장 채널 — 전담 담당자 배치 및 SKU 라인업 확대</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="footer"><span class="live-dot"></span>마지막 업데이트: 2026.05.13 10:30</div>
+</div>
+
+<!-- ══ 상세보기 모달 (차트 4종 공용) ══ -->
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target.id==='detail-modal')closeDetailModal()">
+  <div class="modal-box" id="detail-modal-box">
+    <div class="modal-top" style="border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px">
+      <div><h2 id="detail-modal-title">상세보기</h2><div style="margin-top:3px;color:var(--sub);font-size:13px" id="detail-modal-sub"></div></div>
+      <button class="modal-close" onclick="closeDetailModal()">×</button>
+    </div>
+    <div id="detail-modal-body"></div>
+  </div>
+</div>
+
+<!-- MAP MODAL -->
+<div class="modal-overlay" id="map-modal" onclick="if(event.target.id==='map-modal')closeMapModal()">
+  <div class="modal-box">
+    <div class="modal-top" style="border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px">
+      <div><h2>수출 국가별 출고 상세보기</h2><div class="mini" style="margin-top:3px;color:var(--sub);font-size:13px">기준월 수출 출고 현황</div></div>
+      <button class="modal-close" onclick="closeMapModal()">×</button>
+    </div>
+    <div class="modal-stats">
+      <div class="modal-stat"><small>수출 총량</small><b class="num" id="map-modal-total">84,327 PCS</b></div>
+      <div class="modal-stat"><small>TOP 국가</small><b id="map-modal-top">🇨🇳 중국 42.0%</b></div>
+      <div class="modal-stat"><small>중국+홍콩</small><b class="warn" id="map-modal-conc">66.9%</b></div>
+      <div class="modal-stat"><small>전월 대비</small><b class="up" id="map-modal-mom">▲3.5%</b></div>
+    </div>
+    <div class="modal-grid">
+      <div class="map-card">
+        <div class="panel-title">확대 지도 <span class="badge">버블 크기 = 출고 PCS</span></div>
+        <div class="map-wrap modal-map" id="mapModal"><div class="map-tooltip"></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">국가별 상세</div>
+        <table class="table" id="modalCountryTable"></table>
+      </div>
+    </div>
+    <div class="modal-bottom">
+      <div class="panel">
+        <div class="panel-title">핵심 요약</div>
+        <div class="summary-mini">
+          <div class="mini-card"><small>수출 총량</small><b class="num" id="mm-exp"></b><div class="mini up" id="mm-yoy"></div></div>
+          <div class="mini-card"><small>TOP5 비중</small><b class="num" id="mm-top5"></b><div class="mini down">▼2.1%p</div></div>
+          <div class="mini-card"><small>수출국 수</small><b class="num" id="mm-cnt"></b><div class="mini up">월별 기준</div></div>
+          <div class="mini-card"><small>TOP2 합산</small><b class="num warn" id="mm-top2"></b><div class="mini warn">편중 관리</div></div>
+        </div>
+      </div>
+      <div class="country-info-card">
+        <h3>국가별 상세 정보</h3>
+        <ul>
+          <li>버블 크기는 출고 PCS 기준입니다.</li>
+          <li>중국·홍콩 편중도와 전월 대비 증감을 함께 점검하세요.</li>
+          <li>일본·베트남 등 성장 국가의 추이를 확인하세요.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════ 데이터 ══════════════════ */
+
+// Chart.js light theme
+Chart.defaults.color='rgba(58,84,112,.7)';
+Chart.defaults.borderColor='rgba(200,218,240,.5)';
+Chart.defaults.font.family="'Plus Jakarta Sans','Noto Sans KR',sans-serif";
+const _TOOLTIP_STYLE={
+  backgroundColor:'rgba(255,255,255,.97)',
+  borderColor:'rgba(200,218,240,.9)',
+  borderWidth:1,
+  titleColor:'#0a1929',
+  bodyColor:'#3a5470',
+  padding:12,
+  cornerRadius:10,
+  boxShadow:'0 8px 24px rgba(10,25,45,.15)',
+  titleFont:{size:12,weight:'800'},
+  bodyFont:{size:11,weight:'500'}
+};
+
+const DATA={
+4:{label:'2026년 4월',total:90125,totalMoM:'▲10.7%',totalPrev:'(81,449)',totalYoY:'▲79.9%',totalPY:'(50,079)',export:84327,expMoM:'▲3.5%',expPrev:'(81,449)',expYoY:'▲63.4%',expPY:'(51,682)',domestic:5798,domMoM:'▲46.2%',domPrev:'(3,964)',domYoY:'▲639.6%',domPY:'(784)',skuPP:31.2,skuMoM:'▼6.9%',skuPrev:'(33.5)',skuYoY:'▼31.5%',skuPY:'(45.5)',skuCnt:3128,skuCMoM:'▲5.1%',skuCPrev:'(2,977)',skuCYoY:'▲53.7%',skuCPY:'(2,036)',
+ins1:'4월 총 출고량은 <b>90,125 PCS</b>이며 전월 대비 <b>▲10.7%</b> 증가했습니다. 전년 동월 대비 <b>▲79.9%</b>로 크게 성장했습니다.',
+ins2:'수출 비중 <b>93.6%</b>, 국내 <b>6.4%</b>입니다. 면세점 <b>▲7.3%</b> 회복, 백화점 <b>▼6.3%</b> 조정 중입니다.',
+ins3:'중국+홍콩 합산 <b>66.9%</b>. 수출 다변화와 피킹 평준화 검토가 필요합니다.',
+dd:{duty:2933,dept:2512,outlet:285,etc:68,dutyLabel:'면세점',deptLabel:'백화점',outletLabel:'아울렛',etcLabel:'기타',
+    dutyPrev:2733,deptPrev:2680,outletPrev:210,etcPrev:82,badge:'4월 · 5,798 PCS'},
+cc:{asia:70903,ame:8945,eu:3251,etc:1228,asiaLabel:'아시아',ameLabel:'미주',euLabel:'유럽',etcLabel:'기타',
+    asiaPrev:63680,amePrev:10265,euPrev:3256,etcPrev:1200,badge:'4월 · 84,327 PCS'},
+countries:[{name:'중국',code:'cn',lon:104,lat:35,pcs:35436,pct:'42.0%',chg:'▲1.1%'},{name:'홍콩',code:'hk',lon:114.2,lat:22.3,pcs:21048,pct:'24.9%',chg:'▼23.6%'},{name:'미국',code:'us',lon:-98,lat:39,pcs:7872,pct:'9.3%',chg:'▼19.2%'},{name:'일본',code:'jp',lon:138,lat:36,pcs:3156,pct:'3.7%',chg:'▲16.8%'},{name:'대만',code:'tw',lon:121,lat:23.7,pcs:2985,pct:'3.5%',chg:'▲5.9%'},{name:'독일',code:'de',lon:10,lat:51,pcs:1245,pct:'1.5%',chg:'▲8.2%'},{name:'UAE',code:'ae',lon:54,lat:24,pcs:1842,pct:'2.2%',chg:'▼4.7%'}],
+more:[{name:'싱가포르',code:'sg',pcs:1985,chg:'▼4.2%',pct:'2.4%',trend:[1850,1920,1960,1985]},{name:'베트남',code:'vn',pcs:1742,chg:'▲18.7%',pct:'2.1%',trend:[1050,1230,1420,1742]},{name:'말레이시아',code:'my',pcs:1298,chg:'▲6.4%',pct:'1.5%',trend:[1100,1180,1240,1298]},{name:'필리핀',code:'ph',pcs:1102,chg:'▲9.1%',pct:'1.3%',trend:[900,960,1050,1102]},{name:'태국',code:'th',pcs:987,chg:'▼3.3%',pct:'1.2%',trend:[1050,1020,980,987]}]},
+3:{label:'2026년 3월',total:81449,totalMoM:'▲12.4%',totalPrev:'(72,460)',totalYoY:'▲61.2%',totalPY:'(50,530)',export:76742,expMoM:'▲10.1%',expPrev:'(69,700)',expYoY:'▲58.4%',expPY:'(48,450)',domestic:4707,domMoM:'▲38.5%',domPrev:'(3,398)',domYoY:'▲502.1%',domPY:'(781)',skuPP:33.5,skuMoM:'▲2.1%',skuPrev:'(32.8)',skuYoY:'▼26.4%',skuPY:'(45.5)',skuCnt:2977,skuCMoM:'▲3.8%',skuCPrev:'(2,868)',skuCYoY:'▲46.3%',skuCPY:'(2,036)',
+ins1:'3월 총 출고량은 <b>81,449 PCS</b>이며 전월 대비 <b>▲12.4%</b> 증가했습니다.',ins2:'수출 비중 <b>94.2%</b>, 국내 <b>5.8%</b>입니다.',ins3:'중국+홍콩 합산 <b>68.4%</b>. 수출 다변화 검토가 필요합니다.',
+dd:{duty:2733,dept:1680,outlet:210,etc:84,dutyLabel:'면세점',deptLabel:'백화점',outletLabel:'아울렛',etcLabel:'기타',dutyPrev:2480,deptPrev:1520,outletPrev:198,etcPrev:72,badge:'3월 · 4,707 PCS'},
+cc:{asia:64500,ame:7920,eu:3122,etc:1200,asiaLabel:'아시아',ameLabel:'미주',euLabel:'유럽',etcLabel:'기타',asiaPrev:58200,amePrev:7210,euPrev:2910,etcPrev:1100,badge:'3월 · 76,742 PCS'},
+countries:[{name:'중국',code:'cn',lon:104,lat:35,pcs:33200,pct:'43.3%',chg:'▲5.2%'},{name:'홍콩',code:'hk',lon:114.2,lat:22.3,pcs:19280,pct:'25.1%',chg:'▲8.1%'},{name:'미국',code:'us',lon:-98,lat:39,pcs:7020,pct:'9.2%',chg:'▲3.2%'},{name:'일본',code:'jp',lon:138,lat:36,pcs:2980,pct:'3.9%',chg:'▲4.6%'},{name:'대만',code:'tw',lon:121,lat:23.7,pcs:2740,pct:'3.6%',chg:'▲2.8%'},{name:'독일',code:'de',lon:10,lat:51,pcs:1180,pct:'1.5%',chg:'▲3.5%'},{name:'UAE',code:'ae',lon:54,lat:24,pcs:1820,pct:'2.4%',chg:'▼2.1%'}],
+more:[{name:'싱가포르',code:'sg',pcs:1920,chg:'▲1.2%',pct:'2.5%',trend:[1850,1900,1920,null]},{name:'베트남',code:'vn',pcs:1650,chg:'▲12.3%',pct:'2.2%',trend:[1050,1230,1650,null]},{name:'말레이시아',code:'my',pcs:1240,chg:'▲3.1%',pct:'1.6%',trend:[1100,1180,1240,null]},{name:'필리핀',code:'ph',pcs:1050,chg:'▲5.5%',pct:'1.4%',trend:[900,960,1050,null]},{name:'태국',code:'th',pcs:950,chg:'▼1.5%',pct:'1.2%',trend:[1050,1020,950,null]}]},
+2:{label:'2026년 2월',total:72460,totalMoM:'▲8.2%',totalPrev:'(66,960)',totalYoY:'▲55.8%',totalPY:'(46,510)',export:68230,expMoM:'▲7.9%',expPrev:'(63,230)',expYoY:'▲53.1%',expPY:'(44,560)',domestic:4230,domMoM:'▲11.2%',domPrev:'(3,803)',domYoY:'▲441.8%',domPY:'(780)',skuPP:32.8,skuMoM:'▲3.1%',skuPrev:'(31.8)',skuYoY:'▼27.9%',skuPY:'(45.5)',skuCnt:2868,skuCMoM:'▲2.6%',skuCPrev:'(2,795)',skuCYoY:'▲40.9%',skuCPY:'(2,036)',
+ins1:'2월 총 출고량은 <b>72,460 PCS</b>이며 전월 대비 <b>▲8.2%</b> 증가했습니다.',ins2:'수출 비중 <b>94.2%</b>, 국내 <b>5.8%</b>입니다.',ins3:'중국+홍콩 합산 <b>69.1%</b>. 수출 다변화 검토가 필요합니다.',
+dd:{duty:2480,dept:1520,outlet:148,etc:82,dutyLabel:'면세점',deptLabel:'백화점',outletLabel:'아울렛',etcLabel:'기타',dutyPrev:2210,deptPrev:1380,outletPrev:132,etcPrev:75,badge:'2월 · 4,230 PCS'},
+cc:{asia:57420,ame:7210,eu:2540,etc:1060,asiaLabel:'아시아',ameLabel:'미주',euLabel:'유럽',etcLabel:'기타',asiaPrev:51800,amePrev:6420,euPrev:2310,etcPrev:980,badge:'2월 · 68,230 PCS'},
+countries:[{name:'중국',code:'cn',lon:104,lat:35,pcs:30480,pct:'44.7%',chg:'▲6.1%'},{name:'홍콩',code:'hk',lon:114.2,lat:22.3,pcs:16650,pct:'24.4%',chg:'▲7.2%'},{name:'미국',code:'us',lon:-98,lat:39,pcs:6280,pct:'9.2%',chg:'▲4.8%'},{name:'일본',code:'jp',lon:138,lat:36,pcs:2820,pct:'4.1%',chg:'▲3.7%'},{name:'대만',code:'tw',lon:121,lat:23.7,pcs:2540,pct:'3.7%',chg:'▲2.1%'},{name:'독일',code:'de',lon:10,lat:51,pcs:1050,pct:'1.5%',chg:'▲2.9%'},{name:'UAE',code:'ae',lon:54,lat:24,pcs:1680,pct:'2.5%',chg:'▼1.8%'}],
+more:[{name:'싱가포르',code:'sg',pcs:1820,chg:'▲0.8%',pct:'2.7%',trend:[1850,1820,null,null]},{name:'베트남',code:'vn',pcs:1540,chg:'▲9.2%',pct:'2.3%',trend:[1050,1540,null,null]},{name:'말레이시아',code:'my',pcs:1180,chg:'▲2.6%',pct:'1.7%',trend:[1100,1180,null,null]},{name:'필리핀',code:'ph',pcs:980,chg:'▲4.1%',pct:'1.4%',trend:[900,980,null,null]},{name:'태국',code:'th',pcs:890,chg:'▼2.2%',pct:'1.3%',trend:[1050,890,null,null]}]},
+1:{label:'2026년 1월',total:66960,totalMoM:'▼3.1%',totalPrev:'(69,120)',totalYoY:'▲43.6%',totalPY:'(46,630)',export:63230,expMoM:'▼3.5%',expPrev:'(65,500)',expYoY:'▲41.8%',expPY:'(44,590)',domestic:3730,domMoM:'▼6.2%',domPrev:'(3,977)',domYoY:'▲378.2%',domPY:'(780)',skuPP:31.8,skuMoM:'▼1.2%',skuPrev:'(32.2)',skuYoY:'▼30.1%',skuPY:'(45.5)',skuCnt:2795,skuCMoM:'▼1.3%',skuCPrev:'(2,832)',skuCYoY:'▲37.3%',skuCPY:'(2,036)',
+ins1:'1월 총 출고량은 <b>66,960 PCS</b>이며 전월 대비 <b>▼3.1%</b> 감소했으나 전년 동월 대비 <b>▲43.6%</b> 증가했습니다.',ins2:'수출 비중 <b>94.4%</b>, 국내 <b>5.6%</b>입니다.',ins3:'중국+홍콩 합산 <b>70.2%</b>. 수출 다변화 검토가 필요합니다.',
+dd:{duty:2210,dept:1282,outlet:142,etc:96,dutyLabel:'면세점',deptLabel:'백화점',outletLabel:'아울렛',etcLabel:'기타',dutyPrev:2380,deptPrev:1420,outletPrev:160,etcPrev:80,badge:'1월 · 3,730 PCS'},
+cc:{asia:53200,ame:6180,eu:2420,etc:1430,asiaLabel:'아시아',ameLabel:'미주',euLabel:'유럽',etcLabel:'기타',asiaPrev:52100,amePrev:6840,euPrev:2680,etcPrev:1300,badge:'1월 · 63,230 PCS'},
+countries:[{name:'중국',code:'cn',lon:104,lat:35,pcs:28640,pct:'45.3%',chg:'▼2.8%'},{name:'홍콩',code:'hk',lon:114.2,lat:22.3,pcs:15660,pct:'24.8%',chg:'▼4.1%'},{name:'미국',code:'us',lon:-98,lat:39,pcs:5480,pct:'8.7%',chg:'▼5.2%'},{name:'일본',code:'jp',lon:138,lat:36,pcs:2640,pct:'4.2%',chg:'▼2.1%'},{name:'대만',code:'tw',lon:121,lat:23.7,pcs:2320,pct:'3.7%',chg:'▼1.9%'},{name:'독일',code:'de',lon:10,lat:51,pcs:980,pct:'1.6%',chg:'▼3.4%'},{name:'UAE',code:'ae',lon:54,lat:24,pcs:1540,pct:'2.4%',chg:'▼3.1%'}],
+more:[{name:'싱가포르',code:'sg',pcs:1720,chg:'▼2.1%',pct:'2.7%',trend:[1720,null,null,null]},{name:'베트남',code:'vn',pcs:1420,chg:'▲6.4%',pct:'2.2%',trend:[1420,null,null,null]},{name:'말레이시아',code:'my',pcs:1080,chg:'▼1.2%',pct:'1.7%',trend:[1080,null,null,null]},{name:'필리핀',code:'ph',pcs:920,chg:'▲2.2%',pct:'1.5%',trend:[920,null,null,null]},{name:'태국',code:'th',pcs:840,chg:'▼4.1%',pct:'1.3%',trend:[840,null,null,null]}]}
+};
+
+const INV_DATA={
+  4:{label:'2026년 4월',stock:92562,stockPill:'▲14.5% 전월',sku:3964,skuPill:'▲4.0%',loc:1337,locPill:'전월 유사',llgPct:86.3,llgPill:'전년 대비 증가',skuPP:23.4,skuPPPill:'전월 21.2 ▲10.4%',groups:[['LLG','가죽잡화',79918,86.3,'var(--purple)','전년 대비 비중 증가 구간 — 수출 출고 집중으로 소진 중'],['SLG','소형잡화',5557,6.0,'var(--amber)','회전율 2.8개월 — 출고 대비 재고 높음'],['ACC','악세서리',3789,4.1,'var(--blue)','회전율 1.1개월 — 적정 재고 수준'],['RTW','의류',3298,3.6,'var(--green)','회전율 1.4개월 — 안정권']],turn:[['LLG 가죽잡화','0.93개월','up',31,'var(--green)','✅ 양호 — 약 4주 내 출고 예상, 적정 재고 수준'],['SLG 소형잡화','2.8개월','warn',93,'var(--amber)','⚠️ 주의 — 현 출고 속도 기준 약 2.8개월치 재고 보유'],['ACC 악세서리','1.1개월','up',37,'var(--green)','✅ 양호 — 출고 속도 대비 적정 재고'],['RTW 의류','1.4개월','up',47,'var(--green)','✅ 안정 — 1.5개월 이하 관리권']],warehouse:[['수출창고',38420,41.5,'var(--teal)','수출 B2B 출고 대기 재고 — 주요 국가 발주 연동'],['EC창고',27680,29.9,'var(--blue)','이커머스 채널 대응 재고 — 빠른 피킹 대응 필요'],['아울렛',14230,15.4,'var(--amber)','이월·시즌오프 상품 중심 — 회전율 점검 필요'],['SQ',8940,9.7,'var(--purple)','품질검사·보류 재고 포함'],['기타',3292,3.6,'#94a3b8','정기 폐기/반품 처리 권장']],ins:['재고 증가','총 재고 <b>92,562 PCS</b> · 전월 대비 <b>▲14.5%</b><br>출고량(90,125)보다 소폭 많아 적체 모니터링 필요','SKU 집중','상위 10% SKU(397종)가 전체 재고의 <b>80%</b> 점유<br>하위 70%는 5% — 저회전 SKU 정리 검토 필요','회전율 포인트','LLG <b>0.93개월 양호</b> / SLG <b>2.8개월 주의</b><br>ACC·RTW는 집계 완료, 모두 안정권']},
+  3:{label:'2026년 3월',stock:80835,stockPill:'▲8.6% 전월',sku:3812,skuPill:'▲3.1%',loc:1329,locPill:'전월 유사',llgPct:85.7,llgPill:'전월 대비 증가',skuPP:21.2,skuPPPill:'전월 20.1 ▲5.5%',groups:[['LLG','가죽잡화',69280,85.7,'var(--purple)','수출 출고 집중 구간'],['SLG','소형잡화',5120,6.3,'var(--amber)','회전율 2.6개월 — 주의'],['ACC','악세서리',3340,4.1,'var(--blue)','회전율 1.2개월 — 적정'],['RTW','의류',3095,3.8,'var(--green)','회전율 1.5개월 — 관리권']],turn:[['LLG 가죽잡화','0.90개월','up',30,'var(--green)','✅ 양호'],['SLG 소형잡화','2.6개월','warn',87,'var(--amber)','⚠️ 주의'],['ACC 악세서리','1.2개월','up',40,'var(--green)','✅ 양호'],['RTW 의류','1.5개월','warn',50,'var(--amber)','관리 필요']],warehouse:[['수출창고',33820,41.8,'var(--teal)','수출 B2B 재고'],['EC창고',24110,29.8,'var(--blue)','EC 대응 재고'],['아울렛',12350,15.3,'var(--amber)','이월 상품'],['SQ',7680,9.5,'var(--purple)','검수·보류'],['기타',2875,3.6,'#94a3b8','정리 권장']],ins:['재고 증가','총 재고 <b>80,835 PCS</b> · 전월 대비 <b>▲8.6%</b>','SKU 집중','상위 10% SKU가 재고 대부분을 점유','회전율 포인트','LLG <b>0.90개월 양호</b> / SLG <b>2.6개월 주의</b>']},
+  2:{label:'2026년 2월',stock:74450,stockPill:'▲4.9% 전월',sku:3698,skuPill:'▲2.4%',loc:1318,locPill:'전월 유사',llgPct:85.1,llgPill:'안정',skuPP:20.1,skuPPPill:'전월 19.3 ▲4.1%',groups:[['LLG','가죽잡화',63350,85.1,'var(--purple)','정상 소진'],['SLG','소형잡화',4890,6.6,'var(--amber)','회전율 2.4개월 — 주의'],['ACC','악세서리',3180,4.3,'var(--blue)','회전율 1.3개월 — 적정'],['RTW','의류',3030,4.1,'var(--green)','회전율 1.6개월 — 관찰']],turn:[['LLG 가죽잡화','0.88개월','up',29,'var(--green)','✅ 양호'],['SLG 소형잡화','2.4개월','warn',80,'var(--amber)','⚠️ 주의'],['ACC 악세서리','1.3개월','up',43,'var(--green)','✅ 양호'],['RTW 의류','1.6개월','warn',53,'var(--amber)','관찰 필요']],warehouse:[['수출창고',31200,41.9,'var(--teal)','수출 재고'],['EC창고',22050,29.6,'var(--blue)','EC 재고'],['아울렛',11380,15.3,'var(--amber)','아울렛 재고'],['SQ',7120,9.6,'var(--purple)','보류 재고'],['기타',2700,3.6,'#94a3b8','정리 권장']],ins:['재고 증가','총 재고 <b>74,450 PCS</b> · 전월 대비 <b>▲4.9%</b>','SKU 집중','상위 SKU 집중 구조 유지','회전율 포인트','LLG 양호 / SLG 주의']},
+  1:{label:'2026년 1월',stock:70980,stockPill:'▼2.1% 전월',sku:3610,skuPill:'▼0.8%',loc:1305,locPill:'전월 유사',llgPct:84.8,llgPill:'안정',skuPP:19.7,skuPPPill:'전월 20.2 ▼2.5%',groups:[['LLG','가죽잡화',60200,84.8,'var(--purple)','정상 관리'],['SLG','소형잡화',4700,6.6,'var(--amber)','회전율 2.3개월 — 주의'],['ACC','악세서리',3100,4.4,'var(--blue)','회전율 1.3개월 — 적정'],['RTW','의류',2980,4.2,'var(--green)','회전율 1.7개월 — 관찰']],turn:[['LLG 가죽잡화','0.95개월','up',32,'var(--green)','✅ 양호'],['SLG 소형잡화','2.3개월','warn',77,'var(--amber)','⚠️ 주의'],['ACC 악세서리','1.3개월','up',43,'var(--green)','✅ 양호'],['RTW 의류','1.7개월','warn',57,'var(--amber)','관찰 필요']],warehouse:[['수출창고',29500,41.6,'var(--teal)','수출 재고'],['EC창고',20900,29.4,'var(--blue)','EC 재고'],['아울렛',10900,15.4,'var(--amber)','아울렛 재고'],['SQ',7050,9.9,'var(--purple)','보류 재고'],['기타',2630,3.7,'#94a3b8','정리 권장']],ins:['재고 조정','총 재고 <b>70,980 PCS</b> · 전월 대비 <b>▼2.1%</b>','SKU 집중','상위 SKU 중심 구조 유지','회전율 포인트','LLG 양호 / SLG 주의']}
+};
+
+let currentMonth=4, currentData=DATA[4];
+let riskChartInst=null;
+// 차트 인스턴스 관리
+const chartInsts={};
+function destroyChart(id){ if(chartInsts[id]){ chartInsts[id].destroy(); delete chartInsts[id]; } }
+
+/* ══ 탭 전환 ══ */
+function reportHeight(){
+  setTimeout(()=>{ const h=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight); window.parent.postMessage({iframeHeight:h},'*'); },200);
+}
+function showTab(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(id==='inventory') renderInventory();
+  if(id==='risk') setTimeout(()=>{ renderRisk(); drawRiskChart(); },100);
+  reportHeight();
+}
+
+/* ══ 월 변경 ══ */
+function changeMonth(m){
+  currentMonth=parseInt(m); currentData=DATA[currentMonth];
+  const d=currentData;
+  const se=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  const sh=(id,v)=>{ const e=document.getElementById(id); if(e) e.innerHTML=v; };
+  const sc=(id,v)=>{ const e=document.getElementById(id); if(e) e.className=v.includes('▲')?'up':'down'; };
+  document.getElementById('monthly-title').textContent='월별 요약 — '+d.label;
+  sh('m-total',d.total.toLocaleString()+'<span class="unit">PCS</span>');
+  se('m-total-mom',d.totalMoM);sc('m-total-mom',d.totalMoM);se('m-total-prev',d.totalPrev);
+  se('m-total-yoy',d.totalYoY);sc('m-total-yoy',d.totalYoY);se('m-total-py',d.totalPY);
+  sh('m-export',d.export.toLocaleString()+'<span class="unit">PCS</span>');
+  se('m-exp-mom',d.expMoM);sc('m-exp-mom',d.expMoM);se('m-exp-prev',d.expPrev);
+  se('m-exp-yoy',d.expYoY);sc('m-exp-yoy',d.expYoY);se('m-exp-py',d.expPY);
+  sh('m-domestic',d.domestic.toLocaleString()+'<span class="unit">PCS</span>');
+  se('m-dom-mom',d.domMoM);sc('m-dom-mom',d.domMoM);se('m-dom-prev',d.domPrev);
+  se('m-dom-yoy',d.domYoY);sc('m-dom-yoy',d.domYoY);se('m-dom-py',d.domPY);
+  se('m-skupp',d.skuPP);
+  se('m-sku-mom',d.skuMoM);sc('m-sku-mom',d.skuMoM);se('m-sku-prev',d.skuPrev);
+  se('m-sku-yoy',d.skuYoY);sc('m-sku-yoy',d.skuYoY);se('m-sku-py',d.skuPY);
+  sh('m-sku',d.skuCnt.toLocaleString()+'<span class="unit">종</span>');
+  se('m-skuc-mom',d.skuCMoM);sc('m-skuc-mom',d.skuCMoM);se('m-skuc-prev',d.skuCPrev);
+  se('m-skuc-yoy',d.skuCYoY);sc('m-skuc-yoy',d.skuCYoY);se('m-skuc-py',d.skuCPY);
+  sh('ins1',d.ins1); sh('ins2',d.ins2); sh('ins3',d.ins3);
+  renderCharts();
+  renderInventory();
+  renderRisk();
+  drawMap('map1');
+}
+
+/* ══════════════════════════════════════════
+   카드 1: 국내 채널별 도넛 차트
+══════════════════════════════════════════ */
+function renderDomesticDonut(){
+  const d=currentData.dd;
+  const total=d.duty+d.dept+d.outlet+d.etc;
+  const prevTotal=d.dutyPrev+d.deptPrev+d.outletPrev+d.etcPrev;
+  document.getElementById('domestic-badge').textContent=currentData.label.replace('2026년 ','')+'월 · '+total.toLocaleString()+' PCS';
+
+  // 도넛 차트
+  destroyChart('domesticDonut');
+  const ctx=document.getElementById('domesticDonut');
+  if(!ctx) return;
+  chartInsts['domesticDonut']=new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['면세점','백화점','아울렛','기타'],
+      datasets:[{
+        data:[d.duty,d.dept,d.outlet,d.etc],
+        backgroundColor:['#2563eb','#059669','#d97706','#94a3b8'],
+        borderWidth:2,borderColor:'#fff',hoverBorderWidth:3
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>' '+c.label+': '+c.raw.toLocaleString()+' PCS ('+((c.raw/total)*100).toFixed(1)+'%)'}}
+      }
+    }
+  });
+
+  // 범례
+  const cols=['#2563eb','#059669','#d97706','#94a3b8'];
+  const labels=['면세점','백화점','아울렛','기타'];
+  const vals=[d.duty,d.dept,d.outlet,d.etc];
+  const prevVals=[d.dutyPrev,d.deptPrev,d.outletPrev,d.etcPrev];
+  let legHtml='';
+  labels.forEach((l,i)=>{
+    const pct=((vals[i]/total)*100).toFixed(1);
+    const chg=prevVals[i]?((vals[i]-prevVals[i])/prevVals[i]*100):0;
+    const chgStr=(chg>=0?'▲':'▼')+Math.abs(chg).toFixed(1)+'%';
+    const chgCls=chg>=0?'up':'down';
+    legHtml+=`<div class="legend-item"><span class="legend-dot" style="background:${cols[i]}"></span>${l} <b style="color:var(--ink);margin:0 2px">${pct}%</b><span class="${chgCls}" style="font-size:10px">${chgStr}</span></div>`;
+  });
+  document.getElementById('domestic-legend').innerHTML=legHtml;
+
+  // 요약
+  const topCh=labels[vals.indexOf(Math.max(...vals))];
+  const dutyChg=d.dutyPrev?((d.duty-d.dutyPrev)/d.dutyPrev*100):0;
+  const deptChg=d.deptPrev?((d.dept-d.deptPrev)/d.deptPrev*100):0;
+  const topChgStr=dutyChg>=0?`면세점 ▲${dutyChg.toFixed(1)}% 회복`:`면세점 ▼${Math.abs(dutyChg).toFixed(1)}% 조정`;
+  document.getElementById('domestic-summary').textContent=`★ ${topChgStr}, 백화점 ${deptChg>=0?'▲':'▼'}${Math.abs(deptChg).toFixed(1)}%`;
+}
+
+/* ══════════════════════════════════════════
+   카드 2: 수출 대륙별 가로 비교 바
+══════════════════════════════════════════ */
+function renderContinentBars(){
+  const d=currentData.cc;
+  document.getElementById('export-badge').textContent=currentData.dd.badge.replace(currentData.dd.badge.split('·')[0],currentData.label.replace('2026년 ','')+' · ');
+  // 더 직접적으로:
+  const expTotal=d.asia+d.ame+d.eu+d.etc;
+  document.getElementById('export-badge').textContent=currentData.label.replace('2026년ₓ','').replace('2026년 ','')+'월 · '+expTotal.toLocaleString()+' PCS';
+
+  const items=[
+    {label:'아시아',cur:d.asia,prev:d.asiaPrev,color:'#e11d48'},
+    {label:'미주',cur:d.ame,prev:d.amePrev,color:'#2563eb'},
+    {label:'유럽',cur:d.eu,prev:d.euPrev,color:'#059669'},
+    {label:'기타',cur:d.etc,prev:d.etcPrev,color:'#94a3b8'}
+  ];
+  const maxVal=Math.max(...items.map(x=>Math.max(x.cur,x.prev)));
+  let html='';
+  items.forEach(item=>{
+    const pct=((item.cur/expTotal)*100).toFixed(1);
+    const prevPct=((item.prev/(item.prev+d.asiaPrev+d.amePrev+d.euPrev+d.etcPrev-item.prev))*100);
+    const barW=Math.round(item.cur/maxVal*100);
+    const prevBarW=Math.round(item.prev/maxVal*100);
+    const chg=item.prev?((item.cur-item.prev)/item.prev*100):0;
+    const chgStr=(chg>=0?'▲':'▼')+Math.abs(chg).toFixed(1)+'%';
+    const chgCls=chg>=0?'up':'down';
+    html+=`<div class="hbar-item">
+      <div class="hbar-head">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${item.color};display:inline-block"></span>${item.label}</span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;color:var(--muted)">${item.cur.toLocaleString()} PCS</span>
+          <b>${pct}%</b>
+          <span class="${chgCls}" style="font-size:12px">${chgStr}</span>
+        </span>
+      </div>
+      <div class="hbar-track">
+        <div class="hbar-fill" style="width:${barW}%;background:${item.color}"></div>
+        <div class="hbar-prev" style="width:${prevBarW}%;background:${item.color};position:absolute;top:0"></div>
+      </div>
+      <div class="hbar-mini" style="font-size:10px;color:var(--muted);margin-top:3px;font-weight:600;letter-spacing:.2px">전월 ${item.prev.toLocaleString()} PCS</div>
+    </div>`;
+  });
+  document.getElementById('continent-bars').innerHTML=html;
+  const topItem=items.reduce((a,b)=>a.cur>b.cur?a:b);
+  document.getElementById('continent-summary').textContent=`★ ${topItem.label} ${((topItem.cur/expTotal)*100).toFixed(1)}%로 최대 비중, 전월 대비 ${topItem.prev&&topItem.cur>topItem.prev?'▲':'▼'}`;
+}
+
+/* ══════════════════════════════════════════
+   카드 3: 수출 상위 5개국 가로 바 차트 (Chart.js)
+══════════════════════════════════════════ */
+function renderTop5Chart(){
+  const d=currentData;
+  // 이전 월 데이터
+  const prevD=currentMonth>1?DATA[currentMonth-1]:null;
+  const top5=d.countries.slice(0,5);
+  const labels=top5.map(c=>c.name);
+  const vals=top5.map(c=>c.pcs);
+  const prevVals=prevD?top5.map(c=>{
+    const pc=prevD.countries.find(x=>x.name===c.name);
+    return pc?pc.pcs:0;
+  }):[0,0,0,0,0];
+
+  destroyChart('top5Chart');
+  const ctx=document.getElementById('top5Chart');
+  if(!ctx) return;
+  chartInsts['top5Chart']=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:d.label.replace('2026년 ',''),data:vals,backgroundColor:'rgba(37,99,235,.78)',borderRadius:5,borderSkipped:false},
+        prevD?{label:(currentMonth-1)+'월',data:prevVals,backgroundColor:'rgba(37,99,235,.22)',borderRadius:5,borderSkipped:false}:null
+      ].filter(Boolean)
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:!!prevD,labels:{font:{size:11,weight:'700'},color:'#4a6278',boxWidth:10}},
+        tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw.toLocaleString()+' PCS'}}},
+      scales:{
+        x:{ticks:{font:{size:10},color:'#7a90a3',callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#eaf0f6'}},
+        y:{ticks:{font:{size:12,weight:'700',family:'Noto Sans KR'},color:'#0d1f2d'},grid:{display:false}}
+      }
+    }
+  });
+
+  const top5Sum=vals.reduce((a,b)=>a+b,0);
+  const top5Pct=((top5Sum/d.export)*100).toFixed(1);
+  document.getElementById('top5-badge').textContent=d.label.replace('2026년 ','')+'월 기준';
+  document.getElementById('top5-summary').textContent=`★ TOP5 합산 ${top5Pct}%, ${top5[0].name} ${top5[0].pct} 최대`;
+}
+
+/* ══════════════════════════════════════════
+   카드 4: 주요 국가 스파크라인 테이블
+══════════════════════════════════════════ */
+function renderMoreSpark(){
+  const d=currentData;
+  const months=['1월','2월','3월','4월'];
+  let html='<table class="spark-table"><thead><tr><th style="width:90px">국가</th><th style="text-align:right">PCS</th><th style="text-align:center;width:72px">트렌드</th><th style="text-align:right">전월</th><th style="text-align:right">비중</th></tr></thead><tbody>';
+
+  d.more.forEach(c=>{
+    const isUp=c.chg.includes('▲');
+    const color=isUp?'var(--green)':'var(--red)';
+    const trendData=c.trend.filter(v=>v!==null);
+    // 미니 SVG 스파크라인
+    const w=68,h=28,pad=3;
+    const mn=Math.min(...trendData), mx=Math.max(...trendData);
+    let sparkSvg='';
+    if(trendData.length>1){
+      const pts=trendData.map((v,i)=>{
+        const x=pad+(i/(trendData.length-1))*(w-pad*2);
+        const y=h-pad-((v-mn)/(mx-mn||1))*(h-pad*2);
+        return `${x},${y}`;
+      }).join(' ');
+      const fillPts=`${pad},${h} `+pts+` ${pad+(trendData.length-1)/(trendData.length-1)*(w-pad*2)},${h}`;
+      const lineColor=isUp?'#059669':'#e11d48';
+      const fillColor=isUp?'rgba(5,150,105,.15)':'rgba(225,29,72,.12)';
+      sparkSvg=`<svg width="${w}" height="${h}" style="display:block"><polygon points="${fillPts}" fill="${fillColor}"/><polyline points="${pts}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+    }else{
+      sparkSvg=`<svg width="${w}" height="${h}"></svg>`;
+    }
+    html+=`<tr>
+      <td><span class="country-name"><img class="flag-img" src="https://flagcdn.com/${c.code}.svg" alt="${c.name}" style="width:16px;height:11px;border-radius:2px">${c.name}</span></td>
+      <td style="text-align:right;font-family:var(--font-num);font-size:13px">${c.pcs.toLocaleString()}</td>
+      <td style="text-align:center">${sparkSvg}</td>
+      <td style="text-align:right"><span class="${isUp?'up':'down'}" style="font-size:12px">${c.chg}</span></td>
+      <td style="text-align:right;color:var(--muted);font-size:12px">${c.pct}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('more-spark-table').innerHTML=html;
+
+  const growingCount=d.more.filter(c=>c.chg.includes('▲')).length;
+  const topGrow=d.more.filter(c=>c.chg.includes('▲')).sort((a,b)=>parseFloat(b.chg)-parseFloat(a.chg))[0];
+  document.getElementById('more-summary').textContent=topGrow?`★ ${topGrow.name} ${topGrow.chg} 최고 성장, 총 ${growingCount}개국 증가세`:'★ 최신 국가별 트렌드';
+}
+
+function renderCharts(){
+  renderDomesticDonut();
+  renderContinentBars();
+  renderTop5Chart();
+  renderMoreSpark();
+}
+
+/* ══════════════════════════════════════════
+   상세보기 모달 렌더러
+══════════════════════════════════════════ */
+let detailChartInsts={};
+function destroyDetailCharts(){
+  Object.values(detailChartInsts).forEach(c=>{ try{c.destroy();}catch(e){} });
+  detailChartInsts={};
+}
+
+function openDetailModal(type){
+  destroyDetailCharts();
+  const modal=document.getElementById('detail-modal');
+  const body=document.getElementById('detail-modal-body');
+  const title=document.getElementById('detail-modal-title');
+  const sub=document.getElementById('detail-modal-sub');
+  modal.classList.add('open');
+
+  const d=currentData;
+
+  if(type==='domestic'){
+    title.textContent='국내 채널별 출고 상세';
+    sub.textContent=d.label+' · 전월 대비 비교 및 월별 추이';
+    const dd=d.dd;
+    const total=dd.duty+dd.dept+dd.outlet+dd.etc;
+    const prevTotal=dd.dutyPrev+dd.deptPrev+dd.outletPrev+dd.etcPrev;
+    const totChgStr=((total-prevTotal)/prevTotal*100);
+    const chgCls=totChgStr>=0?'up':'down';
+
+    // 월별 데이터 수집
+    const monthLabels=[]; const dutyTrend=[],deptTrend=[],outletTrend=[],etcTrend=[];
+    for(let m=1;m<=currentMonth;m++){
+      monthLabels.push(m+'월');
+      dutyTrend.push(DATA[m].dd.duty); deptTrend.push(DATA[m].dd.dept);
+      outletTrend.push(DATA[m].dd.outlet); etcTrend.push(DATA[m].dd.etc);
+    }
+
+    body.innerHTML=`
+    <div class="detail-kpi-row">
+      <div class="dkpi"><small>총 국내 출고</small><b>${total.toLocaleString()}</b><div class="dsub ${chgCls}">전월 ${prevTotal.toLocaleString()} · ${totChgStr>=0?'▲':'▼'}${Math.abs(totChgStr).toFixed(1)}%</div></div>
+      <div class="dkpi"><small>면세점</small><b>${dd.duty.toLocaleString()}</b><div class="dsub ${dd.duty>=dd.dutyPrev?'up':'down'}">전월 ${dd.dutyPrev.toLocaleString()} · ${dd.duty>=dd.dutyPrev?'▲':'▼'}${Math.abs((dd.duty-dd.dutyPrev)/dd.dutyPrev*100).toFixed(1)}%</div></div>
+      <div class="dkpi"><small>백화점</small><b>${dd.dept.toLocaleString()}</b><div class="dsub ${dd.dept>=dd.deptPrev?'up':'down'}">전월 ${dd.deptPrev.toLocaleString()} · ${dd.dept>=dd.deptPrev?'▲':'▼'}${Math.abs((dd.dept-dd.deptPrev)/dd.deptPrev*100).toFixed(1)}%</div></div>
+      <div class="dkpi"><small>아울렛</small><b>${dd.outlet.toLocaleString()}</b><div class="dsub ${dd.outlet>=dd.outletPrev?'up':'down'}">전월 ${dd.outletPrev.toLocaleString()} · ${dd.outlet>=dd.outletPrev?'▲':'▼'}${Math.abs((dd.outlet-dd.outletPrev)/dd.outletPrev*100).toFixed(1)}%</div></div>
+    </div>
+    <div class="detail-charts">
+      <div class="detail-chart-panel">
+        <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">현월 vs 전월 채널별 비교</div>
+        <div class="ch-wrap-lg"><canvas id="dc-compare"></canvas></div>
+      </div>
+      <div class="detail-chart-panel">
+        <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">채널 비중 (현월)</div>
+        <div class="ch-wrap-lg" style="display:flex;align-items:center;justify-content:center"><canvas id="dc-pie"></canvas></div>
+      </div>
+    </div>
+    <div class="detail-chart-panel" style="margin-bottom:12px">
+      <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">월별 채널 추이 (1~${currentMonth}월)</div>
+      <div style="height:180px;position:relative"><canvas id="dc-trend"></canvas></div>
+    </div>
+    <table class="detail-table">
+      <thead><tr><th>채널</th><th>현월 PCS</th><th>전월 PCS</th><th>증감</th><th>증감률</th><th>비중</th></tr></thead>
+      <tbody>
+        ${[['면세점',dd.duty,dd.dutyPrev],['백화점',dd.dept,dd.deptPrev],['아울렛',dd.outlet,dd.outletPrev],['기타',dd.etc,dd.etcPrev]].map(r=>{
+          const chg=r[1]-r[2]; const chgP=((chg/r[2])*100).toFixed(1); const cls=chg>=0?'up':'down';
+          return `<tr><td>${r[0]}</td><td class="num">${r[1].toLocaleString()}</td><td class="num" style="color:var(--muted)">${r[2].toLocaleString()}</td><td class="num ${cls}">${chg>=0?'+':''}${chg.toLocaleString()}</td><td class="num ${cls}">${chg>=0?'▲':'▼'}${Math.abs(chgP)}%</td><td class="num">${((r[1]/total)*100).toFixed(1)}%</td></tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
+    setTimeout(()=>{
+      const cols=['#2563eb','#059669','#d97706','#94a3b8'];
+      const chLabels=['면세점','백화점','아울렛','기타'];
+      const curVals=[dd.duty,dd.dept,dd.outlet,dd.etc];
+      const prevVals=[dd.dutyPrev,dd.deptPrev,dd.outletPrev,dd.etcPrev];
+
+      detailChartInsts['dc-compare']=new Chart(document.getElementById('dc-compare'),{
+        type:'bar',data:{labels:chLabels,datasets:[
+          {label:'현월',data:curVals,backgroundColor:cols.map(c=>c+'cc'),borderRadius:5},
+          {label:'전월',data:prevVals,backgroundColor:cols.map(c=>c+'44'),borderRadius:5}
+        ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11,weight:'700'}}}},scales:{y:{ticks:{callback:v=>v.toLocaleString()},grid:{color:'#eaf0f6'}},x:{grid:{display:false}}}}
+      });
+      detailChartInsts['dc-pie']=new Chart(document.getElementById('dc-pie'),{
+        type:'pie',data:{labels:chLabels,datasets:[{data:curVals,backgroundColor:cols,borderWidth:2,borderColor:'#fff'}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,weight:'700'},boxWidth:10}}}}
+      });
+      detailChartInsts['dc-trend']=new Chart(document.getElementById('dc-trend'),{
+        type:'line',data:{labels:monthLabels,datasets:[
+          {label:'면세점',data:dutyTrend,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',tension:.3,fill:true,pointRadius:4,borderWidth:2},
+          {label:'백화점',data:deptTrend,borderColor:'#059669',backgroundColor:'rgba(5,150,105,.08)',tension:.3,fill:true,pointRadius:4,borderWidth:2},
+          {label:'아울렛',data:outletTrend,borderColor:'#d97706',tension:.3,fill:false,pointRadius:4,borderWidth:2}
+        ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11,weight:'700'},boxWidth:10}}},scales:{y:{ticks:{callback:v=>v.toLocaleString()},grid:{color:'#eaf0f6'}},x:{grid:{display:false}}}}
+      });
+    },80);
+
+  } else if(type==='continent'){
+    title.textContent='수출 대륙별 출고 상세';
+    sub.textContent=d.label+' · 대륙별 비중 및 전월 비교';
+    const cc=d.cc;
+    const total=cc.asia+cc.ame+cc.eu+cc.etc;
+    const prevTotal=cc.asiaPrev+cc.amePrev+cc.euPrev+cc.etcPrev;
+
+    const monthLabels=[]; const asiaTrend=[],ameTrend=[],euTrend=[];
+    for(let m=1;m<=currentMonth;m++){
+      monthLabels.push(m+'월');
+      asiaTrend.push(DATA[m].cc.asia); ameTrend.push(DATA[m].cc.ame); euTrend.push(DATA[m].cc.eu);
+    }
+
+    const regions=[['아시아',cc.asia,cc.asiaPrev,'#e11d48'],['미주',cc.ame,cc.amePrev,'#2563eb'],['유럽',cc.eu,cc.euPrev,'#059669'],['기타',cc.etc,cc.etcPrev,'#94a3b8']];
+
+    body.innerHTML=`
+    <div class="detail-kpi-row">
+      ${regions.map(r=>{const chg=r[2]?((r[1]-r[2])/r[2]*100):0;const cls=chg>=0?'up':'down';return `<div class="dkpi"><small>${r[0]}</small><b>${r[1].toLocaleString()}</b><div class="dsub ${cls}">전월 ${r[2].toLocaleString()} · ${chg>=0?'▲':'▼'}${Math.abs(chg).toFixed(1)}%</div></div>`;}).join('')}
+    </div>
+    <div class="detail-charts">
+      <div class="detail-chart-panel">
+        <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">현월 vs 전월 대륙별 비교</div>
+        <div class="ch-wrap-lg"><canvas id="cc-compare"></canvas></div>
+      </div>
+      <div class="detail-chart-panel">
+        <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">대륙 비중 도넛</div>
+        <div class="ch-wrap-lg" style="display:flex;align-items:center;justify-content:center"><canvas id="cc-donut"></canvas></div>
+      </div>
+    </div>
+    <div class="detail-chart-panel" style="margin-bottom:12px">
+      <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">월별 대륙 추이 (1~${currentMonth}월)</div>
+      <div style="height:180px;position:relative"><canvas id="cc-trend"></canvas></div>
+    </div>
+    <table class="detail-table">
+      <thead><tr><th>대륙</th><th>현월 PCS</th><th>전월 PCS</th><th>증감</th><th>증감률</th><th>비중</th></tr></thead>
+      <tbody>${regions.map(r=>{const chg=r[1]-r[2];const chgP=r[2]?((chg/r[2])*100).toFixed(1):0;const cls=chg>=0?'up':'down';return `<tr><td>${r[0]}</td><td class="num">${r[1].toLocaleString()}</td><td class="num" style="color:var(--muted)">${r[2].toLocaleString()}</td><td class="num ${cls}">${chg>=0?'+':''}${chg.toLocaleString()}</td><td class="num ${cls}">${chg>=0?'▲':'▼'}${Math.abs(chgP)}%</td><td class="num">${((r[1]/total)*100).toFixed(1)}%</td></tr>`;}).join('')}
+      </tbody>
+    </table>`;
+
+    setTimeout(()=>{
+      const cols=['#e11d48','#2563eb','#059669','#94a3b8'];
+      const labs=['아시아','미주','유럽','기타'];
+      const cur=[cc.asia,cc.ame,cc.eu,cc.etc];
+      const prev=[cc.asiaPrev,cc.amePrev,cc.euPrev,cc.etcPrev];
+      detailChartInsts['cc-compare']=new Chart(document.getElementById('cc-compare'),{
+        type:'bar',data:{labels:labs,datasets:[
+          {label:'현월',data:cur,backgroundColor:cols.map(c=>c+'cc'),borderRadius:5},
+          {label:'전월',data:prev,backgroundColor:cols.map(c=>c+'44'),borderRadius:5}
+        ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11,weight:'700'}}}},scales:{y:{ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#eaf0f6'}},x:{grid:{display:false}}}}
+      });
+      detailChartInsts['cc-donut']=new Chart(document.getElementById('cc-donut'),{
+        type:'doughnut',data:{labels:labs,datasets:[{data:cur,backgroundColor:cols,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{size:11,weight:'700'},boxWidth:10}}}}
+      });
+      detailChartInsts['cc-trend']=new Chart(document.getElementById('cc-trend'),{
+        type:'line',data:{labels:monthLabels,datasets:[
+          {label:'아시아',data:asiaTrend,borderColor:'#e11d48',backgroundColor:'rgba(225,29,72,.08)',tension:.3,fill:true,pointRadius:4,borderWidth:2},
+          {label:'미주',data:ameTrend,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.07)',tension:.3,fill:true,pointRadius:4,borderWidth:2},
+          {label:'유럽',data:euTrend,borderColor:'#059669',tension:.3,fill:false,pointRadius:4,borderWidth:2}
+        ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11,weight:'700'},boxWidth:10}}},scales:{y:{ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#eaf0f6'}},x:{grid:{display:false}}}}
+      });
+    },80);
+
+  } else if(type==='top5'){
+    title.textContent='수출 상위 국가 상세';
+    sub.textContent=d.label+' · 국가별 출고 비교 및 전월 대비';
+    const top7=d.countries.slice(0,7);
+    const prevD=currentMonth>1?DATA[currentMonth-1]:null;
+
+    const monthLabels=[]; const cntTrend={};
+    top7.forEach(c=>{ cntTrend[c.name]=[]; });
+    for(let m=1;m<=currentMonth;m++){
+      monthLabels.push(m+'월');
+      top7.forEach(c=>{
+        const found=DATA[m].countries.find(x=>x.name===c.name);
+        cntTrend[c.name].push(found?found.pcs:0);
+      });
+    }
+
+    const top5Sum=top7.slice(0,5).reduce((a,c)=>a+c.pcs,0);
+    const top5Pct=((top5Sum/d.export)*100).toFixed(1);
+
+    body.innerHTML=`
+    <div class="detail-kpi-row">
+      <div class="dkpi"><small>TOP5 합산</small><b>${top5Sum.toLocaleString()}</b><div class="dsub">수출의 ${top5Pct}%</div></div>
+      <div class="dkpi"><small>${top7[0].name}</small><b>${top7[0].pcs.toLocaleString()}</b><div class="dsub ${top7[0].chg.includes('▲')?'up':'down'}">${top7[0].chg} · ${top7[0].pct}</div></div>
+      <div class="dkpi"><small>${top7[1].name}</small><b>${top7[1].pcs.toLocaleString()}</b><div class="dsub ${top7[1].chg.includes('▲')?'up':'down'}">${top7[1].chg} · ${top7[1].pct}</div></div>
+      <div class="dkpi"><small>TOP2 합산 비중</small><b style="color:var(--red)">${(parseFloat(top7[0].pct)+parseFloat(top7[1].pct)).toFixed(1)}%</b><div class="dsub warn">편중 주의</div></div>
+    </div>
+    <div class="detail-charts">
+      <div class="detail-chart-panel">
+        <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">국가별 출고량 비교 (현월 vs 전월)</div>
+        <div class="ch-wrap-lg"><canvas id="t5-compare"></canvas></div>
+      </div>
+      <div class="detail-chart-panel">
+        <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">국가 비중 분포</div>
+        <div class="ch-wrap-lg" style="display:flex;align-items:center;justify-content:center"><canvas id="t5-pie"></canvas></div>
+      </div>
+    </div>
+    <div class="detail-chart-panel" style="margin-bottom:12px">
+      <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">주요 국가 월별 추이 (1~${currentMonth}월)</div>
+      <div style="height:200px;position:relative"><canvas id="t5-trend"></canvas></div>
+    </div>
+    <table class="detail-table">
+      <thead><tr><th>#</th><th>국가</th><th>현월 PCS</th><th>${prevD?'전월 PCS':''}</th><th>전월 대비</th><th>비중</th></tr></thead>
+      <tbody>${top7.map((c,i)=>{
+        const prevC=prevD?prevD.countries.find(x=>x.name===c.name):null;
+        const cls=c.chg.includes('▲')?'up':'down';
+        return `<tr><td><span class="rank">${i+1}</span></td><td><span style="display:flex;align-items:center;gap:5px"><img src="https://flagcdn.com/${c.code}.svg" style="width:18px;height:12px;border-radius:2px">${c.name}</span></td><td class="num">${c.pcs.toLocaleString()}</td><td class="num" style="color:var(--muted)">${prevC?prevC.pcs.toLocaleString():'-'}</td><td class="num ${cls}">${c.chg}</td><td class="num">${c.pct}</td></tr>`;
+      }).join('')}
+      </tbody>
+    </table>`;
+
+    setTimeout(()=>{
+      const COLORS=['#2563eb','#e11d48','#059669','#d97706','#7c3aed','#0d9488','#94a3b8'];
+      const labs=top7.map(c=>c.name);
+      const cur=top7.map(c=>c.pcs);
+      const prev=prevD?top7.map(c=>{ const pc=prevD.countries.find(x=>x.name===c.name); return pc?pc.pcs:0; }):[...cur].map(()=>0);
+
+      detailChartInsts['t5-compare']=new Chart(document.getElementById('t5-compare'),{
+        type:'bar',data:{labels:labs,datasets:[
+          {label:'현월',data:cur,backgroundColor:COLORS.map(c=>c+'cc'),borderRadius:5},
+          {label:'전월',data:prev,backgroundColor:COLORS.map(c=>c+'33'),borderRadius:5}
+        ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11,weight:'700'}}}},scales:{y:{ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#eaf0f6'}},x:{ticks:{font:{size:11,weight:'700',family:'Noto Sans KR'}},grid:{display:false}}}}
+      });
+      detailChartInsts['t5-pie']=new Chart(document.getElementById('t5-pie'),{
+        type:'doughnut',data:{labels:labs,datasets:[{data:cur,backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{font:{size:10,weight:'700',family:'Noto Sans KR'},boxWidth:9,padding:8}}}}
+      });
+
+      const trendColors=['#2563eb','#e11d48','#059669','#d97706','#7c3aed'];
+      detailChartInsts['t5-trend']=new Chart(document.getElementById('t5-trend'),{
+        type:'line',
+        data:{labels:monthLabels,datasets:top7.slice(0,5).map((c,i)=>({
+          label:c.name,data:cntTrend[c.name],borderColor:trendColors[i],
+          backgroundColor:trendColors[i]+'18',tension:.3,fill:i<2,pointRadius:4,borderWidth:2
+        }))},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,weight:'700',family:'Noto Sans KR'},boxWidth:9,padding:8}}},scales:{y:{ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#eaf0f6'}},x:{grid:{display:false}}}}
+      });
+    },80);
+
+  } else if(type==='more'){
+    title.textContent='주요 국가 출고 상세';
+    sub.textContent=d.label+' · 성장 국가 트렌드 분석';
+    const more=d.more;
+    const allMoreTrend={};
+    more.forEach(c=>{ allMoreTrend[c.name]=[]; });
+    const monthLabels=[];
+    for(let m=1;m<=currentMonth;m++){
+      monthLabels.push(m+'월');
+      more.forEach(c=>{
+        const mc=DATA[m].more.find(x=>x.name===c.name);
+        allMoreTrend[c.name].push(mc?mc.pcs:null);
+      });
+    }
+
+    body.innerHTML=`
+    <div class="detail-kpi-row">
+      ${more.map(c=>{const cls=c.chg.includes('▲')?'up':'down';return `<div class="dkpi"><small><img src="https://flagcdn.com/${c.code}.svg" style="width:16px;height:11px;border-radius:2px;margin-right:4px;vertical-align:-1px">${c.name}</small><b>${c.pcs.toLocaleString()}</b><div class="dsub ${cls}">${c.chg} · 비중 ${c.pct}</div></div>`;}).join('')}
+    </div>
+    <div class="detail-charts">
+      <div class="detail-chart-panel">
+        <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">국가별 PCS 비교</div>
+        <div class="ch-wrap-lg"><canvas id="mr-bar"></canvas></div>
+      </div>
+      <div class="detail-chart-panel">
+        <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">전월 대비 증감률 (%)</div>
+        <div class="ch-wrap-lg"><canvas id="mr-chg"></canvas></div>
+      </div>
+    </div>
+    <div class="detail-chart-panel" style="margin-bottom:12px">
+      <div class="ptitle" style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">국가별 월별 추이 (1~${currentMonth}월)</div>
+      <div style="height:200px;position:relative"><canvas id="mr-trend"></canvas></div>
+    </div>
+    <table class="detail-table">
+      <thead><tr><th>국가</th><th>현월 PCS</th><th>전월 대비</th><th>수출 비중</th><th>트렌드 방향</th></tr></thead>
+      <tbody>${more.map(c=>{const cls=c.chg.includes('▲')?'up':'down';const arr=c.chg.includes('▲')?'↗':'↘';const tcolor=c.chg.includes('▲')?'var(--green)':'var(--red)';return `<tr><td><span style="display:flex;align-items:center;gap:5px"><img src="https://flagcdn.com/${c.code}.svg" style="width:18px;height:12px;border-radius:2px">${c.name}</span></td><td class="num">${c.pcs.toLocaleString()}</td><td class="num ${cls}">${c.chg}</td><td class="num">${c.pct}</td><td style="text-align:center;font-size:18px;color:${tcolor}">${arr}</td></tr>`;}).join('')}
+      </tbody>
+    </table>`;
+
+    setTimeout(()=>{
+      const COLORS=['#2563eb','#059669','#d97706','#7c3aed','#0d9488'];
+      const labs=more.map(c=>c.name);
+      const vals=more.map(c=>c.pcs);
+      const chgVals=more.map(c=>parseFloat(c.chg.replace('▲','').replace('▼',x=>'-').replace('%','')));
+      // fix: handle ▼ sign
+      const chgVals2=more.map(c=>{
+        const raw=c.chg.replace('%','');
+        if(raw.includes('▲')) return parseFloat(raw.replace('▲',''));
+        if(raw.includes('▼')) return -parseFloat(raw.replace('▼',''));
+        return 0;
+      });
+
+      detailChartInsts['mr-bar']=new Chart(document.getElementById('mr-bar'),{
+        type:'bar',data:{labels:labs,datasets:[{label:'출고 PCS',data:vals,backgroundColor:COLORS.map(c=>c+'cc'),borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v.toLocaleString()},grid:{color:'#eaf0f6'}},x:{ticks:{font:{size:11,weight:'700',family:'Noto Sans KR'}},grid:{display:false}}}}
+      });
+      detailChartInsts['mr-chg']=new Chart(document.getElementById('mr-chg'),{
+        type:'bar',data:{labels:labs,datasets:[{label:'전월 대비 %',data:chgVals2,backgroundColor:chgVals2.map(v=>v>=0?'rgba(5,150,105,.7)':'rgba(225,29,72,.7)'),borderRadius:5}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(c.raw>=0?'▲':'▼')+Math.abs(c.raw).toFixed(1)+'%'}}},scales:{y:{ticks:{callback:v=>(v>=0?'+':'')+v+'%'},grid:{color:'#eaf0f6'}},x:{ticks:{font:{size:11,weight:'700',family:'Noto Sans KR'}},grid:{display:false}}}}
+      });
+      detailChartInsts['mr-trend']=new Chart(document.getElementById('mr-trend'),{
+        type:'line',
+        data:{labels:monthLabels,datasets:more.map((c,i)=>({
+          label:c.name,
+          data:allMoreTrend[c.name],
+          borderColor:COLORS[i],backgroundColor:COLORS[i]+'18',
+          tension:.4,fill:false,pointRadius:5,borderWidth:2,
+          spanGaps:false
+        }))},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10,weight:'700',family:'Noto Sans KR'},boxWidth:9,padding:8}}},scales:{y:{ticks:{callback:v=>v.toLocaleString()},grid:{color:'#eaf0f6'}},x:{grid:{display:false}}}}
+      });
+    },80);
+  }
+}
+function closeDetailModal(){
+  document.getElementById('detail-modal').classList.remove('open');
+  destroyDetailCharts();
+}
+
+/* ══ 재고 탭 ══ */
+function renderInventory(){
+  var inv=INV_DATA[currentMonth]||INV_DATA[4];
+  var wrap=document.getElementById('inventory');
+  if(!wrap) return;
+  function n(v){return Number(v).toLocaleString();}
+  var groupHtml=inv.groups.map(function(g){return '<div class="bar-item"><div class="bar-head"><span><b style="color:'+g[4]+'">'+g[0]+'</b> '+g[1]+'</span><span>'+n(g[2])+' · '+g[3]+'%</span></div><div class="track"><div class="fill" style="width:'+g[3]+'%;background:'+g[4]+'"></div></div><div class="mini">'+g[5]+'</div></div>';}).join('');
+  var turnHtml=inv.turn.map(function(t){return '<div class="bar-item"><div class="bar-head"><span>'+t[0]+'</span><span class="'+t[2]+'">'+t[1]+'</span></div><div class="track"><div class="fill" style="width:'+t[3]+'%;background:'+t[4]+'"></div></div><div class="mini '+t[2]+'">'+t[5]+'</div></div>';}).join('');
+  var whHtml=inv.warehouse.map(function(w){return '<div class="bar-item"><div class="bar-head"><span>'+w[0]+'</span><span>'+n(w[1])+' PCS · '+w[2]+'%</span></div><div class="track"><div class="fill" style="width:'+w[2]+'%;background:'+w[3]+'"></div></div><div class="mini">'+w[4]+'</div></div>';}).join('');
+  wrap.innerHTML='<h2 class="sec-title">재고 현황 — '+inv.label+'</h2>'+
+  '<div class="kpis">'+
+  '<div class="kpi"><div class="label">총 재고 PCS</div><div class="value num">'+n(inv.stock)+'<span class="unit">PCS</span></div><span class="pill '+(inv.stockPill.indexOf('▲')>=0?'up':inv.stockPill.indexOf('▼')>=0?'down':'')+'">'+inv.stockPill+'</span></div>'+
+  '<div class="kpi"><div class="label">관리 SKU</div><div class="value num">'+n(inv.sku)+'<span class="unit">종</span></div><span class="pill up">'+inv.skuPill+'</span></div>'+
+  '<div class="kpi"><div class="label">LOC 수</div><div class="value num">'+n(inv.loc)+'</div><span class="pill">'+inv.locPill+'</span></div>'+
+  '<div class="kpi"><div class="label">LLG 비중</div><div class="value num">'+inv.llgPct+'<span class="unit">%</span></div><span class="pill warn">'+inv.llgPill+'</span></div>'+
+  '<div class="kpi"><div class="label">SKU당 PCS</div><div class="value num">'+inv.skuPP+'</div><span class="pill up">'+inv.skuPPPill+'</span></div></div>'+
+  '<div class="dark-strip"><div><span class="tag amber">'+inv.ins[0]+'</span><p>'+inv.ins[1]+'</p></div><div><span class="tag purple">'+inv.ins[2]+'</span><p>'+inv.ins[3]+'</p></div><div><span class="tag green">'+inv.ins[4]+'</span><p>'+inv.ins[5]+'</p></div></div>'+
+  '<div class="grid2"><div class="panel"><div class="panel-title">그룹별 재고 <span class="badge">'+currentMonth+'월 기준</span></div>'+groupHtml+'</div>'+
+  '<div class="panel"><div class="panel-title">그룹별 재고 회전율 <span class="badge">재고 ÷ 월 출고량</span></div>'+turnHtml+'<div class="inv-tip">💡 <b>회전율 = 현재 재고 ÷ 월 출고량.</b> 1.0 이하 양호, 2.0 이상은 재고 과다 — 발주 조절 또는 출고 촉진 필요</div></div></div>'+
+  '<div class="grid2"><div class="panel"><div class="panel-title">SKU 재고 집중도 <span class="badge">파레토 분석</span></div><div class="pareto-bar-row"><div style="width:80%;background:#e11d48">80%</div><div style="width:15%;background:#d97706">15%</div><div style="width:5%;background:#94a3b8">5%</div></div><div class="pareto-legend"><span><i style="background:#e11d48"></i>상위 10% ('+Math.round(inv.sku*.1).toLocaleString()+'종)</span><span><i style="background:#d97706"></i>중위 20% ('+Math.round(inv.sku*.2).toLocaleString()+'종)</span><span><i style="background:#94a3b8"></i>하위 70% ('+Math.round(inv.sku*.7).toLocaleString()+'종)</span></div><div class="sku-insight">⚠️ <b>상위 10% SKU가 전체 재고의 약 80%</b>를 점유합니다.</div></div>'+
+  '<div class="panel"><div class="panel-title">창고별 재고 현황 <span class="badge">'+currentMonth+'월 기준</span></div>'+whHtml+'<div class="inv-tip">💡 <b>수출창고+EC창고 중심</b>으로 정상 유통 경로 재고를 우선 모니터링하세요.</div></div></div>';
+}
+
+/* ══ 리스크 탭 ══ */
+function _pctNum(p){return parseFloat(String(p).replace('%',''))||0;}
+function _topCountryPair(){
+  const d=currentData;
+  const a=d.countries[0]||{name:'-',pct:'0%',pcs:0,code:''};
+  const b=d.countries[1]||{name:'-',pct:'0%',pcs:0,code:''};
+  const sum=(_pctNum(a.pct)+_pctNum(b.pct)).toFixed(1)+'%';
+  return {a,b,sum};
+}
+function renderRisk(){
+  const sec=document.getElementById('risk'); if(!sec) return;
+  const d=currentData, inv=INV_DATA[currentMonth]||INV_DATA[4], pair=_topCountryPair();
+  const title=sec.querySelector('.sec-title'); if(title) title.textContent='운영 리스크 — '+d.label;
+  const riskCards=sec.querySelectorAll('.risk-kpi');
+  if(riskCards[0]) riskCards[0].innerHTML='<div class="rlabel">수출 집중도 <span class="rbadge danger">위험</span></div><div class="rval">'+pair.sum.replace('%','')+'<span style="font-size:18px">%</span></div><div class="rdesc">'+pair.a.name+'+'+pair.b.name+' 합산 비중</div>';
+  const slg=(inv.turn.find(x=>x[0].indexOf('SLG')>=0)||['SLG','-','warn']);
+  if(riskCards[1]) riskCards[1].innerHTML='<div class="rlabel">SLG 재고 회전율 <span class="rbadge warn">주의</span></div><div class="rval">'+String(slg[1]).replace('개월','')+'<span style="font-size:18px">개월</span></div><div class="rdesc">기준치 1.5개월 초과</div>';
+  if(riskCards[2]) riskCards[2].innerHTML='<div class="rlabel">SKU당 PCS <span class="rbadge warn">'+(d.skuMoM.indexOf('▼')>=0?'감소':'증가')+'</span></div><div class="rval">'+d.skuPP+'</div><div class="rdesc">전월 '+d.skuPrev.replace(/[()]/g,'')+' '+d.skuMoM+'</div>';
+  let grow=0; for(let m=1;m<=currentMonth;m++){ if(DATA[m]&&DATA[m].totalMoM.indexOf('▲')>=0) grow++; }
+  if(riskCards[3]) riskCards[3].innerHTML='<div class="rlabel">출고 회복세 <span class="rbadge good">'+(d.totalMoM.indexOf('▲')>=0?'양호':'관찰')+'</span></div><div class="rval">'+grow+'<span style="font-size:18px">개월</span></div><div class="rdesc">선택 기간 내 전월 대비 성장 월수</div>';
+  const countryCnt=currentMonth===4?26:currentMonth===3?22:currentMonth===2?20:18;
+  if(riskCards[4]) riskCards[4].innerHTML='<div class="rlabel">수출 국가 수 <span class="rbadge info">확대</span></div><div class="rval">'+countryCnt+'<span style="font-size:18px">개국</span></div><div class="rdesc">'+currentMonth+'월 기준 관리 국가</div>';
+  const chartBadge=sec.querySelector('.risk-chart-panel .panel-title .badge'); if(chartBadge) chartBadge.textContent='1~'+currentMonth+'월';
+  const concBox=sec.querySelectorAll('.risk-chart-panel')[1].querySelector('div[style*="padding-top"]');
+  if(concBox){
+    const max=Math.max(...d.countries.map(c=>_pctNum(c.pct)));
+    const rows=d.countries.slice(0,7).map((c,i)=>{
+      const pct=_pctNum(c.pct), w=max?Math.round(pct/max*100):0;
+      const color=i===0?'linear-gradient(90deg,#e11d48,#fb7185)':i===1?'linear-gradient(90deg,#f97316,#fdba74)':pct>=3?'linear-gradient(90deg,#2563eb,#60a5fa)':'linear-gradient(90deg,#059669,#34d399)';
+      const valStyle=i===0?'color:var(--red)':i===1?'color:var(--amber)':'';
+      return `<div class="country-risk-bar"><div class="crb-name"><img class="flag-img" src="https://flagcdn.com/${c.code}.svg" style="width:20px;height:14px;border-radius:2px;margin-right:4px">${c.name}</div><div class="crb-wrap"><div class="crb-fill" style="width:${w}%;background:${color}"></div></div><div class="crb-val" style="${valStyle}">${c.pct}</div></div>`;
+    }).join('');
+    concBox.innerHTML=rows+`<div style="margin-top:10px;padding:8px 12px;background:var(--red-lt);border-radius:8px;font-size:12px;color:var(--red);font-weight:700">⚠️ ${pair.a.name}+${pair.b.name} 합산 ${pair.sum} — 편중 구조 주의</div>`;
+  }
+  const insights=sec.querySelectorAll('.ai-insight .itext');
+  if(insights[0]) insights[0].innerHTML=`수출 집중도는 <b>${pair.a.name}+${pair.b.name} ${pair.sum}</b>로, 편중 구조입니다. 성장 국가 비중 확대를 통한 다변화가 필요합니다.`;
+  if(insights[1]) insights[1].innerHTML=`SLG 소형잡화 재고 회전율이 <b>${slg[1]}</b>로 기준치(1.5개월)를 초과합니다.`;
+  if(insights[2]) insights[2].innerHTML=`${d.label} 출고량 <b>${d.total.toLocaleString()} PCS</b>, 전월 대비 <b>${d.totalMoM}</b>입니다.`;
+  if(insights[3]) insights[3].innerHTML=`SKU당 PCS <b>${d.skuPP}</b> (${d.skuMoM}). 피킹 평준화와 SKU 효율 관리를 병행하세요.`;
+  // 모달 통계 업데이트
+  const e=document.getElementById; 
+  if(e('map-modal-total')) e('map-modal-total').textContent=d.export.toLocaleString()+' PCS';
+  if(e('map-modal-top')) e('map-modal-top').innerHTML=`<img src="https://flagcdn.com/${pair.a.code}.svg" style="width:18px;height:12px;border-radius:2px;margin-right:4px;vertical-align:-1px">${pair.a.name} ${pair.a.pct}`;
+  if(e('map-modal-conc')) e('map-modal-conc').textContent=pair.sum;
+  if(e('map-modal-mom')){ e('map-modal-mom').textContent=d.expMoM; e('map-modal-mom').className=d.expMoM.includes('▲')?'up':'down'; }
+  if(e('mm-exp')) e('mm-exp').textContent=d.export.toLocaleString();
+  if(e('mm-yoy')){ e('mm-yoy').textContent=d.expYoY+' 전년'; e('mm-yoy').className='mini '+(d.expYoY.includes('▲')?'up':'down'); }
+  if(e('mm-cnt')) e('mm-cnt').textContent=countryCnt+'개국';
+  if(e('mm-top2')) e('mm-top2').textContent=pair.sum;
+  renderModalCountryTable();
+}
+function renderModalCountryTable(){
+  const d=currentData;
+  const modal=document.getElementById('modalCountryTable');
+  if(!modal) return;
+  const all=d.countries.concat(d.more);
+  function pcs(v){return Number(v).toLocaleString()+'<span class="pcs-unit">PCS</span>';}
+  modal.innerHTML='<thead><tr><th style="width:44px">순위</th><th>국가</th><th style="text-align:right">PCS</th><th style="text-align:center">전월</th><th style="text-align:center">비중</th></tr></thead><tbody>'+
+    all.map((c,i)=>{const cls=c.chg.includes('▲')?'up':'down';return `<tr><td><span class="rank">${i+1}</span></td><td><span style="display:flex;align-items:center;gap:5px"><img src="https://flagcdn.com/${c.code}.svg" style="width:18px;height:12px;border-radius:2px">${c.name}</span></td><td style="text-align:right;font-family:var(--font-num);font-weight:800">${pcs(c.pcs)}</td><td style="text-align:center" class="${cls}">${c.chg}</td><td style="text-align:center">${c.pct}</td></tr>`;}).join('')+'</tbody>';
+}
+
+function drawRiskChart(){
+  const months=[],exps=[],doms=[];
+  for(let i=1;i<=currentMonth;i++){ months.push(i+'월');exps.push(DATA[i].export);doms.push(DATA[i].domestic); }
+  const ctx=document.getElementById('riskTrendChart'); if(!ctx) return;
+  if(riskChartInst) riskChartInst.destroy();
+  riskChartInst=new Chart(ctx,{type:'bar',data:{labels:months,datasets:[
+    {label:'수출',data:exps,backgroundColor:'rgba(37,99,235,.70)',borderRadius:5},
+    {label:'국내',data:doms,backgroundColor:'rgba(5,150,105,.65)',borderRadius:5}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{font:{size:12,weight:'700'},color:'#4a6278',boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw.toLocaleString()+' PCS'}}},scales:{x:{ticks:{font:{size:12,weight:'700'},color:'#4a6278'}},y:{ticks:{font:{size:11},color:'#7a90a3',callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#eaf0f6'}}}}});
+}
+
+/* ══ 지도 ══ */
+const _MW=680, _MH=340;
+const _MP=atob('PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik0zODUuMywzNy44IEw0NTMuMywzNy44IEw0NjguNCw0My40IEw0NTMuMyw2OC4wIEw0MjMuMSw4My4xIEw0MDAuNCw4My4xIEwzODUuMyw3MS44IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTQ2OC40LDM0LjAgTDY4MC4wLDM0LjAgTDY4MC4wLDc1LjYgTDYwNC40LDgzLjEgTDUyOC45LDcxLjggTDQ2OC40LDQzLjQgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNMzQ5LjQsMzUuOSBMMzkyLjksMzUuOSBMMzk2LjcsNjIuMyBMMzc3LjgsNjQuMiBMMzY2LjQsNjQuMiBMMzQ5LjQsNTYuNyBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik0zMzYuMiw1Mi45IEwzODUuMyw2NC4yIEwzODkuMSw4Ni45IEwzNzAuMiw4Ni45IEwzNTUuMSw4Ni45IEwzMzYuMiw3OS4zIEwzMjQuOSw4My4xIFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTMyMy4wLDg2LjkgTDM0Ny42LDg2LjkgTDM0Ny42LDEwMi4wIEwzMjMuMCwxMDIuMCBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik0zMzAuNiw1NC44IEwzNDMuOCw2Mi4zIEwzMzYuMiw3NS42IEwzMjguNyw3NS42IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTM1NS4xLDgzLjEgTDM4OS4xLDgzLjEgTDM5Mi45LDk4LjIgTDM3Ny44LDEwMi4wIEwzNjYuNCw5NC40IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTM4OS4xLDkwLjcgTDQyMy4xLDkwLjcgTDQyMy4xLDEwMi4wIEwzODkuMSwxMDIuMCBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik00MTEuOCw5OC4yIEw0NTcuMSw5OC4yIEw0NTcuMSwxMjQuNyBMNDExLjgsMTI0LjcgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNNDA4LjAsMTEzLjMgTDQ1My4zLDExMy4zIEw0NDkuNiwxNDcuMyBMNDIzLjEsMTQ3LjMgTDQwOC4wLDEzNi4wIFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTQyMy4xLDk4LjIgTDQ3OS44LDk4LjIgTDQ3OS44LDEyMC45IEw0MjMuMSwxMjAuOSBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik00NjguNCwxMDIuMCBMNTA2LjIsMTE3LjEgTDQ5MS4xLDE1NC45IEw0NjguNCwxNTQuOSBMNDU3LjEsMTMyLjIgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNNDc3LjksNzUuNiBMNTk1LjAsNzUuNiBMNTk1LjAsMTMyLjIgTDU0NC4wLDEzMi4yIEw1MjguOSwxMjguNCBMNTEwLjAsMTE3LjEgTDQ4Ny4zLDEwMi4wIEw0NzcuOSw5MC43IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTU3OC4wLDk4LjIgTDU4OS4zLDk4LjIgTDU4OS4zLDEwNS44IEw1NzguMCwxMDUuOCBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik01ODUuNiw4Ni45IEw2MTMuOSw4Ni45IEw2MTMuOSwxMTEuNCBMNTg1LjYsMTExLjQgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNNTI1LjEsMTI0LjcgTDU0Ny44LDEyNC43IEw1NDcuOCwxNTEuMSBMNTI1LjEsMTUxLjEgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNNTE5LjQsMTU4LjcgTDU0NC4wLDE1OC43IEw1NDQuMCwxODEuMyBMNTE5LjQsMTgxLjMgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNNTQ0LjAsMTU0LjkgTDU2NC44LDE1NC45IEw1NjQuOCwxNzMuOCBMNTQ0LjAsMTczLjggWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNNTYxLjAsMTMyLjIgTDU3OS45LDEzMi4yIEw1NzkuOSwxNTQuOSBMNTYxLjAsMTU0LjkgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNMzA2LjAsOTguMiBMNDQyLjAsOTguMiBMNDQyLjAsMTUxLjEgTDQwOC4wLDE1MS4xIEwzNTguOSwxNTEuMSBMMzA2LjAsMTM5LjggWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNMzA2LjAsMTM5LjggTDM1OC45LDEzOS44IEwzNTguOSwxNzAuMCBMMzA2LjAsMTcwLjAgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNMzU4LjksMTUxLjEgTDQxOS4zLDE1MS4xIEw0MTkuMywxODguOSBMMzU4LjksMTg4LjkgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNNDA0LjIsMTQzLjYgTDQzOC4yLDE0My42IEw0MzguMiwxOTIuNyBMNDA0LjIsMTkyLjcgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNMzYyLjcsMTg4LjkgTDQwOC4wLDE4OC45IEw0MDQuMiwyMTUuMyBMMzc0LjAsMjM4LjAgTDM2Mi43LDIyMi45IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTQyMy4xLDE5Mi43IEw0MzQuNCwxOTIuNyBMNDM0LjQsMjE5LjEgTDQyMy4xLDIxOS4xIFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTIzNi4xLDExLjMgTDMxMy42LDExLjMgTDMwNi4wLDU2LjcgTDI1My4xLDU2LjcgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNNzUuNiwzNC4wIEwyNDEuOCwzNC4wIEwyNDEuOCw1Ni43IEwxODguOSw4My4xIEwxNjYuMiw4My4xIEwxNTEuMSw3OS4zIEwxMTMuMyw3OS4zIEw3NS42LDU2LjcgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNMTAzLjksNzcuNCBMMjE1LjMsNzcuNCBMMTg4LjksMTIwLjkgTDE3My44LDEzMi4yIEwxNTEuMSwxMjguNCBMMTI0LjcsMTE3LjEgTDEwMy45LDEwMi4wIFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTExNy4xLDEwOS42IEwxNzcuNiwxMzkuOCBMMTk2LjQsMTU0LjkgTDE3Ny42LDE1NC45IEwxNzAuMCwxMzkuOCBMMTUxLjEsMTI4LjQgTDEyNC43LDExNy4xIFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTE3MC4wLDEyNC43IEwyMjYuNywxMjQuNyBMMjI2LjcsMTM5LjggTDE3MC4wLDEzOS44IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTE5Ni40LDE0Ny4zIEwyMjYuNywxNDcuMyBMMjI2LjcsMTcwLjAgTDE5Ni40LDE3MC4wIFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTIwMC4yLDE1OC43IEwyNzUuOCwxNTguNyBMMjcyLjAsMjA3LjggTDI0NS42LDIzNC4yIEwyMTUuMywyMDQuMCBMMjAwLjIsMTcwLjAgWiIvPjxwYXRoIGNsYXNzPSJsYW5kIiBkPSJNMTkyLjcsMTY2LjIgTDIxNS4zLDE2Ni4yIEwyMTUuMywyMTUuMyBMMjExLjYsMjc1LjggTDE5Mi43LDI2MC43IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTIxMS42LDIwNy44IEwyNDEuOCwyMDcuOCBMMjM0LjIsMjc1LjggTDIxMS42LDI3NS44IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTU1NS4zLDIwNy44IEw2MzAuOSwyMDcuOCBMNjI3LjEsMjQxLjggTDU4OS4zLDI0NS42IEw1NTUuMywyMzQuMiBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik02NTMuNiwyMzQuMiBMNjc2LjIsMjM4LjAgTDY2OC43LDI1Ni45IEw2NTMuNiwyNTYuOSBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik01ODcuNCwxNzEuOSBMNjIzLjMsMTcxLjkgTDYyMy4zLDE4NS4xIEw1ODcuNCwxODUuMSBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik00MzQuNCw2NC4yIEw1MDYuMiw2NC4yIEw1MDYuMiw5NC40IEw0MzQuNCw5NC40IFoiLz48cGF0aCBjbGFzcz0ibGFuZCIgZD0iTTQ1My4zLDk4LjIgTDQ4Ny4zLDk4LjIgTDQ4Ny4zLDEyNC43IEw0NTMuMywxMjQuNyBaIi8+PHBhdGggY2xhc3M9ImxhbmQiIGQ9Ik01MDYuMiwxMTcuMSBMNTI4LjksMTE3LjEgTDUyOC45LDEzOS44IEw1MDYuMiwxMzkuOCBaIi8+');
+function _mxy(lon,lat){return [(lon+180)/360*_MW,(90-lat)/180*_MH];}
+var WORLD_TOPO_CACHE=null, WORLD_TOPO_LOADING=false;
+function _loadWorldTopo(cb){
+  if(WORLD_TOPO_CACHE){cb(WORLD_TOPO_CACHE);return;}
+  if(WORLD_TOPO_LOADING){setTimeout(()=>_loadWorldTopo(cb),120);return;}
+  WORLD_TOPO_LOADING=true;
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
+    .then(r=>r.json()).then(j=>{WORLD_TOPO_CACHE=j;cb(j);}).catch(()=>{WORLD_TOPO_CACHE='fallback';cb('fallback');});
+}
+function drawMap(cid){
+  _loadWorldTopo(w=>{ if(w==='fallback'||typeof d3==='undefined'||typeof topojson==='undefined'){ _drawMapFallback(cid); }else{ _drawMapDetailed(cid,w); } });
+}
+function _drawMapDetailed(cid,world){
+  const box=document.getElementById(cid); if(!box) return;
+  const bw=box.offsetWidth||900;
+  const bh=parseInt(box.style.height)||box.offsetHeight||(cid==='mapModal'?520:420);
+  if(bw<10){setTimeout(()=>drawMap(cid),200);return;}
+  const d=currentData;
+  let mx=0; d.countries.forEach(c=>{if(c.pcs>mx)mx=c.pcs;});
+  const countries=topojson.feature(world,world.objects.countries).features;
+  const projection=d3.geoNaturalEarth1().fitExtent([[4,4],[bw-4,bh-8]],{type:'Sphere'});
+  projection.scale(projection.scale()*1.16).translate([bw/2,bh/2+8]);
+  const path=d3.geoPath(projection);
+  const graticule=d3.geoGraticule().step([30,30]);
+  const oceanId='oceanGrad'+cid, glowId='bubbleGlow'+cid;
+  let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" viewBox="0 0 ${bw} ${bh}" style="display:block;border-radius:18px">
+    <defs>
+      <linearGradient id="${oceanId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#eef6ff"/><stop offset="100%" stop-color="#f8fbff"/></linearGradient>
+      <filter id="${glowId}" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8" result="blur"/><feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.145 0 0 0 0 0.388 0 0 0 0 0.922 0 0 0 .45 0" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <radialGradient id="bubbleGrad${cid}" cx="38%" cy="30%" r="70%"><stop offset="0%" stop-color="#60a5fa"/><stop offset="55%" stop-color="#2563eb"/><stop offset="100%" stop-color="#1d4ed8"/></radialGradient>
+    </defs>
+    <rect width="${bw}" height="${bh}" fill="url(#${oceanId})"/>
+    <path d="${path({type:'Sphere'})}" fill="rgba(255,255,255,.18)" stroke="rgba(148,179,210,.28)" stroke-width=".8"/>
+    <path d="${path(graticule())}" fill="none" stroke="#b7cfe4" stroke-width=".45" opacity=".35"/>
+    <g opacity=".98">`;
+  countries.forEach(c=>{ const pd=path(c); if(pd) svg+=`<path class="land" d="${pd}"/>`; });
+  svg+='</g>';
+  let bubb='', lbl='';
+  d.countries.forEach(c=>{
+    const xy=projection([c.lon,c.lat]); if(!xy) return;
+    const cx=xy[0], cy=xy[1];
+    const r=Math.sqrt(c.pcs/mx)*(cid==='mapModal'?50:44)+5;
+    const up=c.chg.indexOf('▲')>=0;
+    bubb+=`<circle cx="${cx}" cy="${cy}" r="${r+14}" fill="#2563eb" opacity="0.10" pointer-events="none"/>`;
+    bubb+=`<circle cx="${cx}" cy="${cy}" r="${r+6}" fill="#2563eb" opacity="0.18" pointer-events="none"/>`;
+    bubb+=`<circle class="mb" cx="${cx}" cy="${cy}" r="${r}" fill="url(#bubbleGrad${cid})" fill-opacity="0.92" stroke="rgba(255,255,255,.95)" stroke-width="2.2" filter="url(#${glowId})" data-n="${c.name}" data-p="${c.pcs.toLocaleString()}" data-pct="${c.pct}" data-c="${c.chg}" data-u="${up}" data-cd="${c.code||''}" style="cursor:pointer"/>`;
+    if(r>25){
+      lbl+=`<text x="${cx}" y="${cy-10}" text-anchor="middle" fill="#fff" font-weight="900" font-size="${Math.min(13,r/3)}" pointer-events="none">${c.name}</text>`;
+      lbl+=`<text class="pcs-line" x="${cx}" y="${cy+8}" text-anchor="middle" fill="rgba(255,255,255,.96)" font-weight="800" font-size="${Math.min(11,r/3.5)}" pointer-events="none">${c.pcs.toLocaleString()}</text>`;
+      lbl+=`<text class="pct-line" x="${cx}" y="${cy+22}" text-anchor="middle" fill="rgba(255,255,255,.86)" font-weight="700" font-size="${Math.min(9,r/4)}" pointer-events="none">(${c.pct})</text>`;
+    }else{
+      const ly=(c.code==='hk'||c.code==='tw')?cy+26:cy-12;
+      lbl+=`<text x="${cx}" y="${ly}" text-anchor="middle" fill="#17324d" font-weight="900" font-size="11" pointer-events="none" style="paint-order:stroke;stroke:#fff;stroke-width:3px">${c.name}</text>`;
+      if(r>12) lbl+=`<text class="pcs-line" x="${cx}" y="${ly+12}" text-anchor="middle" fill="#37536f" font-weight="700" font-size="9.5" pointer-events="none" style="paint-order:stroke;stroke:#fff;stroke-width:3px">${c.pcs.toLocaleString()}</text>`;
+    }
+  });
+  const leg=`<circle cx="20" cy="${bh-22}" r="7" fill="#2563eb" fill-opacity=".92"/><text x="34" y="${bh-18}" fill="#4a6278" font-size="12" font-weight="800" font-family="Noto Sans KR,sans-serif">출고 PCS</text>`;
+  box.innerHTML=svg+bubb+lbl+leg+`</svg><div class="map-tooltip"></div><div class="map-zoom-controls"><div class="map-zoom-row"><button class="map-zoom-btn zoom-in" type="button">+</button><button class="map-zoom-btn zoom-out" type="button">−</button><button class="map-zoom-btn zoom-reset" type="button">⟳</button><button class="map-zoom-btn map-mini-btn zoom-simple" type="button">SIMPLE</button></div></div>`;
+  _bindMapTooltip(box,bw,bh); _enableMapZoom(box);
+}
+function _enableMapZoom(box){
+  if(typeof d3==='undefined') return;
+  const svg=box.querySelector('svg'); if(!svg) return;
+  svg.style.cursor='grab'; svg.style.touchAction='none';
+  const node=d3.select(svg);
+  const movable=node.selectAll('path,circle,text');
+  const zoom=d3.zoom().scaleExtent([1,5]).filter(e=>e.type!=='wheel'&&!e.button)
+    .on('start',()=>svg.style.cursor='grabbing')
+    .on('zoom',e=>movable.attr('transform',e.transform))
+    .on('end',()=>svg.style.cursor='grab');
+  node.call(zoom).on('wheel.zoom',null);
+  const q=s=>box.querySelector(s);
+  const stop=e=>{e.preventDefault();e.stopPropagation();};
+  const zi=q('.zoom-in'); if(zi) zi.onclick=e=>{stop(e);node.transition().duration(180).call(zoom.scaleBy,1.28);};
+  const zo=q('.zoom-out'); if(zo) zo.onclick=e=>{stop(e);node.transition().duration(180).call(zoom.scaleBy,0.78);};
+  const zr=q('.zoom-reset'); if(zr) zr.onclick=e=>{stop(e);node.transition().duration(220).call(zoom.transform,d3.zoomIdentity);};
+  const zs=q('.zoom-simple'); if(zs) zs.onclick=e=>{stop(e);box.classList.toggle('simple-map');zs.classList.toggle('active',box.classList.contains('simple-map'));};
+}
+function _bindMapTooltip(box,bw,bh){
+  const tt=box.querySelector('.map-tooltip');
+  const bubbles=box.querySelectorAll('.mb');
+  function placeTip(el){
+    const rc=box.getBoundingClientRect(), er=el.getBoundingClientRect();
+    const cx=(er.left+er.right)/2-rc.left, cy=(er.top+er.bottom)/2-rc.top;
+    const tw=tt.offsetWidth||230, th=tt.offsetHeight||112;
+    let l=cx+18, t=cy-th/2;
+    if(l+tw>bw-16) l=cx-tw-18;
+    if(l<16) l=16; if(t<16) t=16; if(t+th>bh-16) t=bh-th-16;
+    tt.style.left=l+'px'; tt.style.top=t+'px';
+  }
+  bubbles.forEach(el=>{
+    el.addEventListener('mouseenter',()=>{
+      const up=el.dataset.u==='true', cd=el.dataset.cd;
+      const fl=cd?`<img src="https://flagcdn.com/${cd}.svg" style="width:20px;height:14px;border-radius:2px;margin-right:6px">`:'';
+      tt.innerHTML=`<div class="t-title">${fl}${el.dataset.n}</div><div class="t-main">${el.dataset.p} PCS</div><div class="t-sub">비중 ${el.dataset.pct} · 전월 <b class="${up?'up':'down'}">${el.dataset.c}</b></div>`;
+      tt.style.display='block'; requestAnimationFrame(()=>placeTip(el));
+      el.setAttribute('fill-opacity','1'); el.setAttribute('stroke-width','3.4');
+    });
+    el.addEventListener('mousemove',()=>placeTip(el));
+    el.addEventListener('mouseleave',()=>{ tt.style.display='none'; el.setAttribute('fill-opacity','.92'); el.setAttribute('stroke-width','2.2'); });
+  });
+}
+function _drawMapFallback(cid){
+  const box=document.getElementById(cid); if(!box) return;
+  const bw=box.offsetWidth||800;
+  const bh=parseInt(box.style.height)||box.offsetHeight||(cid==='mapModal'?500:420);
+  if(bw<10){setTimeout(()=>_drawMapFallback(cid),200);return;}
+  const sx=bw/_MW, sy=bh/_MH, d=currentData;
+  let mx=0; d.countries.forEach(c=>{if(c.pcs>mx)mx=c.pcs;});
+  let grid='';
+  [-120,-60,0,60,120].forEach(lon=>{ const pts=[]; for(let lt=-75;lt<=75;lt+=10){const xy=_mxy(lon,lt);pts.push(xy[0]*sx+','+xy[1]*sy);} grid+=`<polyline points="${pts.join(' ')}" fill="none" stroke="#9bbfd8" stroke-width="0.4" opacity="0.22"/>`; });
+  [-60,-30,0,30,60].forEach(lat=>{ const pts=[]; for(let ln=-180;ln<=180;ln+=10){const xy=_mxy(ln,lat);pts.push(xy[0]*sx+','+xy[1]*sy);} grid+=`<polyline points="${pts.join(' ')}" fill="none" stroke="#9bbfd8" stroke-width="0.4" opacity="0.22"/>`; });
+  let bubb='',lbl='';
+  d.countries.forEach(c=>{
+    const xy=_mxy(c.lon,c.lat); const cx=xy[0]*sx, cy=xy[1]*sy;
+    const r=Math.sqrt(c.pcs/mx)*48+6; const up=c.chg.indexOf('▲')>=0;
+    bubb+=`<circle cx="${cx}" cy="${cy}" r="${r+12}" fill="#2563eb" opacity="0.11" pointer-events="none"/>`;
+    bubb+=`<circle class="mb" cx="${cx}" cy="${cy}" r="${r}" fill="#2563eb" fill-opacity="0.88" stroke="#fff" stroke-width="2.2" data-n="${c.name}" data-p="${c.pcs.toLocaleString()}" data-pct="${c.pct}" data-c="${c.chg}" data-u="${up}" data-cd="${c.code||''}" style="cursor:pointer"/>`;
+    if(r>26){ lbl+=`<text x="${cx}" y="${cy-8}" text-anchor="middle" fill="#fff" font-weight="900" font-size="12" pointer-events="none">${c.name}</text>`; }
+    else { lbl+=`<text x="${cx}" y="${cy-r-8}" text-anchor="middle" fill="#17324d" font-weight="900" font-size="11" pointer-events="none">${c.name}</text>`; }
+  });
+  const leg=`<circle cx="18" cy="${bh-20}" r="7" fill="#2563eb" fill-opacity="0.88"/><text x="30" y="${bh-16}" fill="#4a6278" font-size="12" font-weight="800" font-family="Noto Sans KR,sans-serif">출고 PCS</text>`;
+  box.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="${bw}" height="${bh}" style="display:block;border-radius:18px"><defs><linearGradient id="mbg${cid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#eef6ff"/><stop offset="100%" stop-color="#f8fbff"/></linearGradient></defs><rect width="${bw}" height="${bh}" fill="url(#mbg${cid})"/><g transform="scale(${sx},${sy})">${_MP}</g>${grid}${bubb}${lbl}${leg}</svg><div class="map-tooltip"></div><div class="map-zoom-controls"><div class="map-zoom-row"><button class="map-zoom-btn zoom-in" type="button">+</button><button class="map-zoom-btn zoom-out" type="button">−</button><button class="map-zoom-btn zoom-reset" type="button">⟳</button><button class="map-zoom-btn map-mini-btn zoom-simple" type="button">SIMPLE</button></div></div>`;
+  _bindMapTooltip(box,bw,bh); _enableMapZoom(box);
+}
+
+function openMapModal(){
+  document.querySelectorAll('.map-tooltip').forEach(t=>t.style.display='none');
+  renderRisk();
+  document.getElementById('map-modal').classList.add('open');
+  renderModalCountryTable();
+  setTimeout(()=>drawMap('mapModal'),80);
+}
+function closeMapModal(){ document.getElementById('map-modal').classList.remove('open'); }
+
+/* ══ 초기화 ══ */
+renderCharts();
+renderRisk();
+(function tryMap(n){
+  const b=document.getElementById('map1');
+  if(b&&b.offsetWidth>10){drawMap('map1');reportHeight();}
+  else if(n<20){setTimeout(()=>tryMap(n+1),150);}
+})(0);
+window.addEventListener('resize',()=>{drawMap('map1');reportHeight();});
+</script>
+</body>
+</html>
